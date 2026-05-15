@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.log
+
+# Local npm cache used by `npm install --cache ./.npm-cache`
+.npm-cache
+
+# Environment & secrets
+.env
+.env.*
+!.env.example

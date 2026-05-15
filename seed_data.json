@@ -1,0 +1,757 @@
+{
+  "metadata": {
+    "totalCountries": 43,
+    "region": "Sub-Saharan Africa (excluding North Africa)",
+    "sourceFile": "List_of_countries_NWA.xlsx",
+    "lastSynced": "2026-05-14",
+    "figureCount": 8,
+    "totalFigureWorkItems": 344,
+    "notes": "Figure leads for figures 2, 3, and 8 are unassigned and must be set by admin via /admin/assignments. Figure short labels are used in tight UI surfaces (heatmaps, matrix headers); full labels are shown in detail views."
+  },
+  "figureTypes": [
+    {
+      "order": 1,
+      "type": "Map of country",
+      "shortLabel": "Country Map",
+      "lead": "Geethya",
+      "scope": "all 43 countries"
+    },
+    {
+      "order": 2,
+      "type": "Changes in cultivated area",
+      "shortLabel": "Cultivated Area",
+      "lead": null,
+      "scope": "all 43 countries \u2014 lead unassigned, admin to assign"
+    },
+    {
+      "order": 3,
+      "type": "Map showing the spatial distribution of irrigated and rainfed areas",
+      "shortLabel": "Irrigation Map",
+      "lead": null,
+      "scope": "all 43 countries \u2014 lead unassigned, admin to assign"
+    },
+    {
+      "order": 4,
+      "type": "River network of country",
+      "shortLabel": "River Network",
+      "lead": "Tharindu",
+      "scope": "all 43 countries; Lake-Sharing Countries pending update"
+    },
+    {
+      "order": 5,
+      "type": "Sankey diagram",
+      "shortLabel": "Sankey",
+      "lead": "Mohammed",
+      "scope": "all 43 countries"
+    },
+    {
+      "order": 6,
+      "type": "Long-term average water accounts for country",
+      "shortLabel": "Water Accounts",
+      "lead": "Naduni",
+      "scope": "all 43 countries"
+    },
+    {
+      "order": 7,
+      "type": "Long-term average water use and rainfall over different landscapes for the period",
+      "shortLabel": "Water Use & Rainfall",
+      "lead": "Isuru",
+      "scope": "all 43 countries"
+    },
+    {
+      "order": 8,
+      "type": "Per capita water availability and environmental water stress for the period",
+      "shortLabel": "Per Capita & Stress",
+      "lead": null,
+      "scope": "all 43 countries \u2014 lead unassigned, admin to assign"
+    }
+  ],
+  "reviewers": [
+    "Geethya",
+    "Tharindu",
+    "Naduni",
+    "Mohammed",
+    "Isuru"
+  ],
+  "figureProducers": [
+    {
+      "name": "Primrose",
+      "workload": "4 countries",
+      "note": "one country for next week ( Zimbabwe)"
+    },
+    {
+      "name": "Mohammed",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Isuru",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Shivam",
+      "workload": "4 countries",
+      "note": "one country for next week ( Chad)"
+    },
+    {
+      "name": "Geethya",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Lahiru",
+      "workload": "4 countries",
+      "note": "one country for next week ( Tanzania)"
+    },
+    {
+      "name": "Eric",
+      "workload": "4 countries",
+      "note": "one country for next week (Ghana)"
+    },
+    {
+      "name": "Thraindu",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Kirubel",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Komlavi",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Afua",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Mansoor",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Mulugeta",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Naga",
+      "workload": "unassigned",
+      "note": null
+    },
+    {
+      "name": "Smarinka",
+      "workload": "Review",
+      "note": null
+    }
+  ],
+  "countries": [
+    {
+      "no": 1,
+      "name": "Angola",
+      "reportAssignee": "Primrose",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 2,
+      "name": "Benin",
+      "reportAssignee": "Lahiru",
+      "reportDeadline": "2026-05-06",
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 3,
+      "name": "Botswana",
+      "reportAssignee": "Eric/Romeo",
+      "reportDeadline": "2026-05-06",
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 4,
+      "name": "Burkina Faso",
+      "reportAssignee": "Shivam",
+      "reportDeadline": "2026-05-06",
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 5,
+      "name": "Burundi",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 6,
+      "name": "Cameroon",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 7,
+      "name": "Central African Republic",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 8,
+      "name": "Chad",
+      "reportAssignee": "Shivam",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 9,
+      "name": "Congo",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 10,
+      "name": "C\u00f4te d'Ivoire",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 11,
+      "name": "Djibouti",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 12,
+      "name": "DR Congo",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 13,
+      "name": "Equatorial Guinea",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": false
+      },
+      "comments": null
+    },
+    {
+      "no": 14,
+      "name": "Eritrea",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 15,
+      "name": "Eswatini",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 16,
+      "name": "Ethiopia",
+      "reportAssignee": "Kirubel  (1st reviewer)",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 17,
+      "name": "Gabon",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 18,
+      "name": "Gambia",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 19,
+      "name": "Ghana",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 20,
+      "name": "Guinea",
+      "reportAssignee": "Eric",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 21,
+      "name": "Guinea-Bissau",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 22,
+      "name": "Kenya",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 23,
+      "name": "Lesotho",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 24,
+      "name": "Liberia",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 25,
+      "name": "Madagascar",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 26,
+      "name": "Malawi",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 27,
+      "name": "Mali",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 28,
+      "name": "Mauritania",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 29,
+      "name": "Mozambique",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 30,
+      "name": "Namibia",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 31,
+      "name": "Niger",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 32,
+      "name": "Nigeria",
+      "reportAssignee": "Ransford",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 33,
+      "name": "Rwanda",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 34,
+      "name": "Senegal",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 35,
+      "name": "Sierra Leone",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 36,
+      "name": "Somalia",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 37,
+      "name": "South Africa",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 38,
+      "name": "South Sudan",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 39,
+      "name": "Tanzania",
+      "reportAssignee": "Lahiru",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 40,
+      "name": "Togo",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 41,
+      "name": "Uganda",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": false,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 42,
+      "name": "Zambia",
+      "reportAssignee": null,
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    },
+    {
+      "no": 43,
+      "name": "Zimbabwe",
+      "reportAssignee": "Primrose",
+      "reportDeadline": null,
+      "reviews": {
+        "Geethya": true,
+        "Tharindu": true,
+        "Naduni": true,
+        "Mohammed": true,
+        "Isuru": true
+      },
+      "comments": null
+    }
+  ]
+}

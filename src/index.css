@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+}
+.dark {
+  --background: 217 41% 9%;
+  --foreground: 210 40% 98%;
+  --border: 217 19% 27%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: #F8FAFC;
+  color: #0F172A;
+}
+
+.dark body {
+  background: #0A1628;
+  color: #E2E8F0;
+}
+
+::selection {
+  background: rgba(30, 90, 138, 0.18);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: rgba(91, 201, 225, 0.22);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Subtle background pattern for the public dashboard */
+.bg-water-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(30, 90, 138, 0.07) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.dark .bg-water-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(91, 201, 225, 0.07) 1px, transparent 0);
+}
