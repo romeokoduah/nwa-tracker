@@ -127,7 +127,7 @@ export interface AppState {
   lastSyncedAt: string | null;
 }
 
-export const REVIEWERS: string[] = ['Geethya', 'Tharindu', 'Naduni', 'Mohammed', 'Isuru'];
+export const REVIEWERS: string[] = ['Kirubel', 'Mansoor', 'Komalvi', 'Afua', 'Smaranika'];
 
 export const COMPLETION_BUCKETS = [
   { min: 0, max: 0.25, label: '0–25%', color: '#CBD5E1' },

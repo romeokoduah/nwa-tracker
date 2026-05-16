@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Moon, Sun, ShieldCheck, LogIn, Menu } from 'lucide-react';
+import { Search, Moon, Sun, LogIn, LogOut, Menu, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useNwaStore } from '@/store/useNwaStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { CommandPalette } from '@/components/common/CommandPalette';
 
@@ -11,10 +21,16 @@ interface TopbarProps {
 }
 
 export function Topbar({ onOpenSidebar }: TopbarProps) {
-  const isAdmin = useAuthStore((s) => s.isAdmin);
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const logout = useAuthStore((s) => s.logout);
+  const team = useNwaStore((s) => s.team);
   const navigate = useNavigate();
   const { dark, toggle } = useDarkMode();
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const member = currentUser
+    ? team.find((m) => m.id === currentUser.id)
+    : undefined;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -60,21 +76,53 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        {isAdmin ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/admin')}
-            className="gap-1.5"
-          >
-            <ShieldCheck className="h-3.5 w-3.5 text-teal" />
-            Admin
-          </Button>
+        {currentUser ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg border border-slate-200 py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
+                <Avatar
+                  name={currentUser.name}
+                  color={member?.avatarColor}
+                  size="sm"
+                />
+                <span className="hidden max-w-[140px] truncate font-medium text-slate-700 dark:text-slate-200 sm:inline">
+                  {currentUser.name}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                {currentUser.isAdmin ? 'Administrator' : currentUser.name}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/me')}>
+                <LayoutDashboard className="h-4 w-4" />
+                My workspace
+              </DropdownMenuItem>
+              {currentUser.isAdmin && (
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  <ShieldCheck className="h-4 w-4 text-teal" />
+                  Admin dashboard
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  logout();
+                  navigate('/');
+                }}
+                className="text-danger focus:bg-danger/10"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <Button asChild variant="primary" size="sm" className="gap-1.5">
-            <Link to="/admin/login">
+            <Link to="/login">
               <LogIn className="h-3.5 w-3.5" />
-              Admin
+              Sign in
             </Link>
           </Button>
         )}

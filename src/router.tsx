@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { AdminGate } from '@/components/layout/AdminGate';
+import { AuthGate } from '@/components/layout/AuthGate';
 
 import { Overview } from '@/pages/public/Overview';
 import { Countries } from '@/pages/public/Countries';
@@ -11,7 +12,8 @@ import { Reviews } from '@/pages/public/Reviews';
 import { Team } from '@/pages/public/Team';
 import { TeamMemberDetail } from '@/pages/public/TeamMemberDetail';
 
-import { AdminLogin } from '@/pages/admin/AdminLogin';
+import { Login } from '@/pages/Login';
+import { MyWork } from '@/pages/MyWork';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminAssignments } from '@/pages/admin/AdminAssignments';
 import { AdminCountries } from '@/pages/admin/AdminCountries';
@@ -23,7 +25,8 @@ import { AdminSettings } from '@/pages/admin/AdminSettings';
 export function Router() {
   return (
     <Routes>
-      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/admin/login" element={<Login />} />
       <Route element={<AppShell />}>
         <Route index element={<Overview />} />
         <Route path="countries" element={<Countries />} />
@@ -33,6 +36,15 @@ export function Router() {
         <Route path="reviews" element={<Reviews />} />
         <Route path="team" element={<Team />} />
         <Route path="team/:id" element={<TeamMemberDetail />} />
+
+        <Route
+          path="me"
+          element={
+            <AuthGate>
+              <MyWork />
+            </AuthGate>
+          }
+        />
 
         <Route
           path="admin"

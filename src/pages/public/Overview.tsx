@@ -10,7 +10,7 @@ import { StatCard } from '@/components/common/StatCard';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { WorkstreamPanel } from '@/components/charts/WorkstreamPanel';
 import { AfricaMap } from '@/components/map/AfricaMap';
-import { ReviewerHeatmap } from '@/components/charts/ReviewerHeatmap';
+import { WorkstreamHeatmaps } from '@/components/charts/WorkstreamHeatmaps';
 import { WorkloadBar } from '@/components/charts/WorkloadBar';
 import { DeadlineHorizonCard } from '@/components/charts/DeadlineTimeline';
 import { ActivityFeed } from '@/components/common/ActivityFeed';
@@ -151,25 +151,23 @@ export function Overview() {
         </CardContent>
       </Card>
 
-      {/* Heatmap + Workload */}
-      <div className="grid gap-4 xl:grid-cols-[1fr_minmax(320px,420px)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Reviewer heatmap</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ReviewerHeatmap />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Workload by team member</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WorkloadBar />
-          </CardContent>
-        </Card>
+      {/* Workstream heatmaps — one per workstream */}
+      <div>
+        <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-teal">
+          Workstream heatmaps
+        </div>
+        <WorkstreamHeatmaps />
       </div>
+
+      {/* Workload */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Workload by team member</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <WorkloadBar />
+        </CardContent>
+      </Card>
 
       {/* Deadline horizon */}
       <div className="grid gap-4 md:grid-cols-3">

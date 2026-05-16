@@ -1,7 +1,9 @@
 import type { TaskStatus, ReportStatus, Region } from './types';
 
 export const ADMIN_USERNAME = 'admin';
-export const ADMIN_PASSWORD = 'nwa2026';
+// One shared password for every account (admin and all team members), per spec.
+export const SHARED_PASSWORD = 'nwa2026';
+export const ADMIN_PASSWORD = SHARED_PASSWORD;
 
 export const PROGRAMME_NAME = 'NWA Tracker';
 export const PROGRAMME_SUBTITLE = 'National Water Accounting across 43 African countries';

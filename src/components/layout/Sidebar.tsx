@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Droplets,
   LogOut,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNwaStore } from '@/store/useNwaStore';
@@ -53,6 +54,7 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate }: SidebarProps) {
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const currentUser = useAuthStore((s) => s.currentUser);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const completion = useNwaStore((s) =>
@@ -81,6 +83,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {currentUser && (
+          <NavGroup
+            label="My space"
+            items={[{ to: '/me', label: 'My workspace', icon: LayoutDashboard }]}
+            onNavigate={onNavigate}
+          />
+        )}
         <NavGroup label="Programme" items={PROGRAMME} onNavigate={onNavigate} />
         <NavGroup label="Workstreams" items={WORKSTREAMS} onNavigate={onNavigate} />
         {isAdmin && (
@@ -108,7 +117,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             style={{ width: `${(completion * 100).toFixed(2)}%` }}
           />
         </div>
-        {isAdmin && (
+        {currentUser ? (
           <button
             onClick={() => {
               logout();
@@ -117,7 +126,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Sign out of admin
+            Sign out{currentUser.isAdmin ? ' of admin' : ''}
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/login')}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+          >
+            Sign in
           </button>
         )}
       </div>

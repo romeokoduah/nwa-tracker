@@ -384,8 +384,11 @@ export const useNwaStore = create<NwaStore>()(
         })),
     }),
     {
-      name: 'nwa-tracker-store',
-      version: 1,
+      // v2: reviewer roster changed (Kirubel, Mansoor, Komalvi, Afua,
+      // Smaranika). A new storage key forces a clean rehydrate from seed so
+      // existing localStorage doesn't keep the old reviewer structure.
+      name: 'nwa-tracker-store-v2',
+      version: 2,
     },
   ),
 );
