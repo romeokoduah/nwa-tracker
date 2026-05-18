@@ -155,7 +155,7 @@ export interface AppState {
 export const REVIEWERS: string[] = [
   'Kirubel',
   'Mansoor',
-  'Komalvi',
+  'Komlavi',
   'Afua',
   'Smaranika',
   'Naga',
