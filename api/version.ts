@@ -6,8 +6,8 @@
  * edit becomes visible to everyone.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ensureSchema, readVersion } from './_db';
-import { preflight, fail } from './_http';
+import { ensureSchema, readVersion } from './_db.js';
+import { preflight, fail } from './_http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (preflight(req, res)) return;

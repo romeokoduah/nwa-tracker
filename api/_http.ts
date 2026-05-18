@@ -3,7 +3,7 @@
  * excluded from Vercel's filesystem routing, so this is import-only.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { DbNotConfiguredError } from './_db';
+import { DbNotConfiguredError } from './_db.js';
 
 /**
  * Access model is intentionally open ("anyone with the link can edit"), so the

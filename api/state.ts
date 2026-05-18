@@ -6,8 +6,8 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AppState } from '../src/lib/types';
-import { ensureSchema, readState, writeState } from './_db';
-import { preflight, parseBody, fail } from './_http';
+import { ensureSchema, readState, writeState } from './_db.js';
+import { preflight, parseBody, fail } from './_http.js';
 
 function looksLikeAppState(v: unknown): v is AppState {
   return (

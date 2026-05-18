@@ -7,9 +7,9 @@
  * edit is ever lost even with the open "anyone can edit" access model.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { applyMutation, isMutation } from '../src/lib/mutations';
-import { ensureSchema, readState, casState } from './_db';
-import { preflight, parseBody, fail } from './_http';
+import { applyMutation, isMutation } from '../src/lib/mutations.js';
+import { ensureSchema, readState, casState } from './_db.js';
+import { preflight, parseBody, fail } from './_http.js';
 
 const MAX_RETRIES = 6;
 
