@@ -43,10 +43,10 @@ export function AdminActivity() {
           placeholder="Search action…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          containerClassName="max-w-sm flex-1"
+          containerClassName="w-full sm:max-w-sm sm:flex-1"
         />
         <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

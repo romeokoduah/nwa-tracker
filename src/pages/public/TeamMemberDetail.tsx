@@ -78,7 +78,7 @@ export function TeamMemberDetail() {
           <div className="flex items-center gap-4">
             <Avatar name={member.name} color={member.avatarColor} size="lg" />
             <div>
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
                 {member.name}
               </h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -96,7 +96,7 @@ export function TeamMemberDetail() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-6 text-center">
+          <div className="grid w-full grid-cols-3 gap-4 text-center sm:w-auto sm:gap-6">
             <Stat label="Assigned" value={totals.totalAssignments} />
             <Stat label="Done" value={totals.totalDone} />
             <Stat label="%" value={`${Math.round(totals.pct * 100)}%`} />

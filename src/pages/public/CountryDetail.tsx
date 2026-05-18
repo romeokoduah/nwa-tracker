@@ -89,7 +89,7 @@ export function CountryDetail() {
               <span>·</span>
               <span className="font-mono">{country.iso3}</span>
             </div>
-            <h1 className="mt-1 font-display text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl md:text-4xl">
               {country.name}
             </h1>
             <div className="mt-3 flex flex-wrap gap-2">

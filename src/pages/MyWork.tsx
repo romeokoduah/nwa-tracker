@@ -90,7 +90,7 @@ export function MyWork() {
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal">
                 My workspace
               </div>
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
                 {currentUser.name}
               </h1>
               <div className="mt-1.5 flex flex-wrap gap-1.5">

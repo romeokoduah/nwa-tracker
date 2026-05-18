@@ -174,7 +174,7 @@ function FigureTab({
           placeholder="Search country…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          containerClassName="max-w-sm flex-1"
+          containerClassName="w-full sm:max-w-sm sm:flex-1"
         />
         {isAdmin && (
           <Button variant="primary" size="sm" onClick={() => setBulkOpen(true)} className="ml-auto gap-1.5">

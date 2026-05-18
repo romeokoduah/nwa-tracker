@@ -86,10 +86,10 @@ export function Countries() {
           placeholder="Search country or ISO code…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          containerClassName="min-w-[240px] max-w-sm flex-1"
+          containerClassName="w-full sm:min-w-[240px] sm:max-w-sm sm:flex-1"
         />
         <Select value={region} onValueChange={setRegion}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -102,7 +102,7 @@ export function Countries() {
           </SelectContent>
         </Select>
         <Select value={bucket} onValueChange={setBucket}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

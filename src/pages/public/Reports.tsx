@@ -134,10 +134,10 @@ export function Reports() {
           placeholder="Search country…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          containerClassName="max-w-sm flex-1"
+          containerClassName="w-full sm:max-w-sm sm:flex-1"
         />
         <Select value={region} onValueChange={setRegion}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -150,7 +150,7 @@ export function Reports() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -51,10 +51,10 @@ export function Team() {
           placeholder="Search team…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          containerClassName="max-w-sm flex-1"
+          containerClassName="w-full sm:max-w-sm sm:flex-1"
         />
         <Select value={role} onValueChange={(v) => setRole(v as Role | 'all')}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
