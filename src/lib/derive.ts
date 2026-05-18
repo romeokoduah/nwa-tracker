@@ -260,6 +260,36 @@ export function visibleMessages(
   );
 }
 
+/**
+ * Which sections a user may AUTHOR a new comment on:
+ *  - reviewers (and admin): the report and figures
+ *  - report writers: figures only
+ *  - everyone else (e.g. figure producers): none (they reply/resolve only)
+ */
+export function allowedCommentScopes(
+  user: {
+    id: string;
+    name: string;
+    roles: readonly string[];
+    isAdmin: boolean;
+  },
+  country: Country | null,
+): CommentScope[] {
+  if (user.isAdmin) return ['report', 'figure'];
+  const isReviewer =
+    user.roles.includes('reviewer') ||
+    (!!country &&
+      country.reviews.some(
+        (r) => r.reviewerName.toLowerCase() === user.name.toLowerCase(),
+      ));
+  if (isReviewer) return ['report', 'figure'];
+  const isReportWriter =
+    user.roles.includes('report_writer') ||
+    (!!country && country.report.assignedTo === user.id);
+  if (isReportWriter) return ['figure'];
+  return [];
+}
+
 export interface RecipientInput {
   country: Country;
   team: TeamMember[];

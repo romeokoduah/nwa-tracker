@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MessagesSquare,
@@ -19,6 +19,7 @@ import {
   attentionForUser,
   commentNeedsAttention,
   unresolvedBlockingByAuthor,
+  allowedCommentScopes,
 } from '@/lib/derive';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -259,7 +260,7 @@ export function CommentsHub() {
   const { toast } = useToast();
 
   const [countryId, setCountryId] = useState('');
-  const [scope, setScope] = useState<CommentScope>('general');
+  const [scope, setScope] = useState<CommentScope>('figure');
   const [figureType, setFigureType] = useState<FigureType>(FIGURE_TYPES[0]);
   const [blocking, setBlocking] = useState(false);
   const [body, setBody] = useState('');
@@ -282,6 +283,18 @@ export function CommentsHub() {
     () => countries.find((c) => c.id === countryId) ?? null,
     [countries, countryId],
   );
+
+  const allowedScopes = useMemo(
+    () => (author ? allowedCommentScopes(author, selectedCountry) : []),
+    [author, selectedCountry],
+  );
+
+  // keep the chosen scope within what this user is allowed to author
+  useEffect(() => {
+    if (allowedScopes.length > 0 && !allowedScopes.includes(scope)) {
+      setScope(allowedScopes[0]);
+    }
+  }, [allowedScopes, scope]);
 
   const recipients = useMemo(() => {
     if (!author || !selectedCountry) return { ids: [], names: [] };
@@ -421,9 +434,22 @@ export function CommentsHub() {
         )}
 
         <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 dark:border-white/10">
-          <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
-            Leave a comment
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
+              Leave a comment
+            </span>
+            <span className="text-[11px] text-slate-400">
+              Reviewers: report &amp; figures · Report writers: figures only
+            </span>
           </div>
+          {allowedScopes.length === 0 ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+              Your role can't start new comments — only reviewers (report &amp;
+              figures) and report writers (figures) can. You can still reply to
+              comments addressed to you below.
+            </div>
+          ) : (
+            <>
           <div className="flex flex-wrap gap-2">
             <Select value={countryId} onValueChange={setCountryId}>
               <SelectTrigger className="w-full sm:w-56">
@@ -445,9 +471,12 @@ export function CommentsHub() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="report">Report</SelectItem>
-                <SelectItem value="figure">A figure</SelectItem>
+                {allowedScopes.includes('report') && (
+                  <SelectItem value="report">Report</SelectItem>
+                )}
+                {allowedScopes.includes('figure') && (
+                  <SelectItem value="figure">A figure</SelectItem>
+                )}
               </SelectContent>
             </Select>
             {scope === 'figure' && (
@@ -505,6 +534,8 @@ export function CommentsHub() {
               </Button>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {myReviewCountries.length > 0 && (
