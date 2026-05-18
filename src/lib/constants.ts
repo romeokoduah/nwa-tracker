@@ -100,6 +100,9 @@ export const REGION_MAP: Record<string, Region> = {
   Zimbabwe: 'Southern',
 };
 
+/** Country tint when a reviewer has left unresolved feedback. */
+export const FEEDBACK_COLOR = '#A855F7';
+
 export const NORTH_AFRICA_ISO3 = ['DZA', 'EGY', 'LBY', 'MAR', 'TUN', 'SDN', 'ESH'];
 
 export const AVATAR_PALETTE = [

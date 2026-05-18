@@ -11,6 +11,7 @@
 import type {
   ActivityEntry,
   AppState,
+  Comment,
   Country,
   FigureProgress,
   FigureType,
@@ -65,6 +66,14 @@ export type Mutation =
       memberId: string | null;
       act: ActivityEntry;
     }
+  | { t: 'addComment'; comment: Comment; act: ActivityEntry }
+  | {
+      t: 'resolveComment';
+      countryId: string;
+      commentId: string;
+      resolvedAt: string;
+      act: ActivityEntry;
+    }
   | { t: 'logActivity'; act: ActivityEntry }
   | { t: 'replaceState'; state: AppState };
 
@@ -81,6 +90,8 @@ export const MUTATION_TYPES: readonly Mutation['t'][] = [
   'addCountry',
   'removeCountry',
   'bulkAssignFigure',
+  'addComment',
+  'resolveComment',
   'logActivity',
   'replaceState',
 ];
@@ -94,10 +105,42 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
   switch (m.t) {
     case 'replaceState':
       return {
-        countries: m.state.countries,
+        countries: m.state.countries.map((c) => ({
+          ...c,
+          messages: c.messages ?? [],
+        })),
         team: m.state.team,
         activity: m.state.activity ?? [],
         lastSyncedAt: m.state.lastSyncedAt ?? null,
+      };
+
+    case 'addComment':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.comment.countryId
+            ? c
+            : { ...c, messages: [...(c.messages ?? []), m.comment] },
+        ),
+        activity: withActivity(state.activity, m.act),
+      };
+
+    case 'resolveComment':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.countryId
+            ? c
+            : {
+                ...c,
+                messages: (c.messages ?? []).map((msg) =>
+                  msg.id === m.commentId
+                    ? { ...msg, resolved: true, resolvedAt: m.resolvedAt }
+                    : msg,
+                ),
+              },
+        ),
+        activity: withActivity(state.activity, m.act),
       };
 
     case 'logActivity':

@@ -1,4 +1,5 @@
 import { COMPLETION_BUCKETS } from '@/lib/types';
+import { FEEDBACK_COLOR } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 
 interface MapLegendProps {
@@ -27,6 +28,15 @@ export function MapLegend({ className }: MapLegendProps) {
           </div>
         ))}
         <div className="mt-1 flex items-center gap-2 border-t border-slate-200 pt-1.5 dark:border-white/10">
+          <span
+            className="h-3 w-3 rounded-sm ring-1 ring-inset ring-black/5"
+            style={{ background: FEEDBACK_COLOR }}
+          />
+          <span className="text-slate-700 dark:text-slate-200">
+            Reviewer feedback
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm bg-slate-200 ring-1 ring-inset ring-black/5" />
           <span className="text-slate-500">Out of scope</span>
         </div>

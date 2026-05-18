@@ -2,14 +2,27 @@ import { create } from 'zustand';
 import type {
   AppState,
   ActivityEntry,
+  Comment,
+  CommentScope,
   Country,
   FigureProgress,
   FigureType,
   ReportProgress,
+  Role,
   TeamMember,
 } from '@/lib/types';
+import { FIGURE_META } from '@/lib/types';
 import { seedData } from '@/lib/seed';
+import { deriveRecipients } from '@/lib/derive';
 import { applyMutation, type Mutation } from '@/lib/mutations';
+
+export interface AddCommentInput {
+  countryId: string;
+  scope: CommentScope;
+  figureType: FigureType | null;
+  body: string;
+  author: { id: string; name: string; roles: Role[]; isAdmin: boolean };
+}
 
 function nextId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -94,6 +107,10 @@ interface NwaStore extends AppState {
   exportJson: () => string;
   importJson: (json: string) => void;
   resetToSeed: () => void;
+
+  // directed comments
+  addComment: (input: AddCommentInput) => void;
+  resolveComment: (countryId: string, commentId: string) => void;
 
   // activity
   logActivity: (entry: ActivityInput) => void;
@@ -285,7 +302,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
       if (get().countries.some((cc) => cc.id === id)) {
         id = `${id}-${nextId().slice(0, 4)}`;
       }
-      const country: Country = { ...c, id };
+      const country: Country = { ...c, id, messages: c.messages ?? [] };
       commit({
         t: 'addCountry',
         country,
@@ -340,7 +357,10 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
     importJson: (json) => {
       const parsed = JSON.parse(json) as AppState;
       const next: AppState = {
-        countries: parsed.countries,
+        countries: parsed.countries.map((c) => ({
+          ...c,
+          messages: c.messages ?? [],
+        })),
         team: parsed.team,
         activity: parsed.activity ?? [],
         lastSyncedAt: parsed.lastSyncedAt ?? nowISO(),
@@ -360,6 +380,88 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
       void dispatch?.replace(next);
     },
 
+    addComment: (input) => {
+      const s = get();
+      const country = s.countries.find((c) => c.id === input.countryId);
+      if (!country || !input.body.trim()) return;
+      const authorIsReviewer =
+        input.author.roles.includes('reviewer') ||
+        country.reviews.some(
+          (r) => r.reviewerName.toLowerCase() === input.author.name.toLowerCase(),
+        );
+      const authorIsReportWriter =
+        input.author.roles.includes('report_writer') ||
+        country.report.assignedTo === input.author.id;
+      const { ids, names } = deriveRecipients({
+        country,
+        team: s.team,
+        scope: input.scope,
+        figureType: input.figureType ?? null,
+        authorId: input.author.id,
+        authorIsReviewer,
+        authorIsReportWriter,
+      });
+      const roleLabel = input.author.isAdmin
+        ? 'Admin'
+        : authorIsReviewer
+          ? 'Reviewer'
+          : authorIsReportWriter
+            ? 'Report writer'
+            : input.author.roles.includes('figure_lead')
+              ? 'Figure lead'
+              : input.author.roles.includes('figure_producer')
+                ? 'Figure producer'
+                : 'Team';
+      const id = nextId();
+      const comment: Comment = {
+        id,
+        countryId: input.countryId,
+        scope: input.scope,
+        figureType: input.scope === 'figure' ? (input.figureType ?? null) : null,
+        authorId: input.author.id,
+        authorName: input.author.name,
+        authorRole: roleLabel,
+        recipientIds: ids,
+        recipientNames: names,
+        body: input.body.trim(),
+        createdAt: nowISO(),
+        fromReviewer: authorIsReviewer,
+        resolved: false,
+        resolvedAt: null,
+      };
+      const scopeLabel =
+        input.scope === 'figure' && input.figureType
+          ? FIGURE_META[input.figureType].shortLabel
+          : input.scope === 'report'
+            ? 'Report'
+            : 'General';
+      commit({
+        t: 'addComment',
+        comment,
+        act: makeAct({
+          actor: input.author.name,
+          action: `${input.author.name} commented on ${country.name} · ${scopeLabel}`,
+          entityType: 'comment',
+          entityId: `${input.countryId}:${id}`,
+        }),
+      });
+    },
+
+    resolveComment: (countryId, commentId) => {
+      const c = get().countries.find((x) => x.id === countryId);
+      commit({
+        t: 'resolveComment',
+        countryId,
+        commentId,
+        resolvedAt: nowISO(),
+        act: makeAct({
+          action: `Resolved a comment on ${c?.name ?? countryId}`,
+          entityType: 'comment',
+          entityId: `${countryId}:${commentId}`,
+        }),
+      });
+    },
+
     logActivity: (entry) =>
       commit({ t: 'logActivity', act: makeAct(entry) }),
 
@@ -369,7 +471,10 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
 
     _applyRemote: (data, version) =>
       set(() => ({
-        countries: data.countries,
+        countries: data.countries.map((c) => ({
+          ...c,
+          messages: c.messages ?? [],
+        })),
         team: data.team,
         activity: data.activity ?? [],
         lastSyncedAt: data.lastSyncedAt ?? null,

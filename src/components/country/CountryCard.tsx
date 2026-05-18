@@ -11,6 +11,7 @@ import {
   overallCompletion,
   isCountryComplete,
   countOverdue,
+  hasReviewerFeedback,
 } from '@/lib/derive';
 import { Badge } from '@/components/ui/badge';
 import { COMPLETION_BUCKETS } from '@/lib/types';
@@ -65,6 +66,9 @@ export function CountryCard({ country }: CountryCardProps) {
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {complete && <Badge variant="success">Complete</Badge>}
+              {hasReviewerFeedback(country) && (
+                <Badge variant="warning">Feedback</Badge>
+              )}
               {overdue > 0 && <Badge variant="danger">{overdue} overdue</Badge>}
               {country.comments && (
                 <Badge variant="outline" className="gap-1">

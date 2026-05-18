@@ -108,14 +108,45 @@ export function buildSeed(): AppState {
       // optional flag — not required by spec but useful for lake-sharing demo data
     }
 
-    const figures: FigureProgress[] = FIGURE_TYPES.map((type) => ({
-      type,
-      assignedTo: null,
-      status: 'not_started',
-      deadline: null,
-      completedAt: null,
-      notes: null,
-    }));
+    // Current progress baseline: all country maps are complete and were
+    // produced by the figure lead; Per Capita & Stress is complete for
+    // Ethiopia only (the rest remain not started).
+    const completedAt = raw.metadata.lastSynced ?? '2026-05-18T00:00:00.000Z';
+    const figures: FigureProgress[] = FIGURE_TYPES.map((type) => {
+      if (type === 'Map of country') {
+        const leadName = FIGURE_META[type].lead;
+        return {
+          type,
+          assignedTo: leadName ? slugifyPerson(leadName) : null,
+          status: 'done',
+          deadline: null,
+          completedAt,
+          notes: null,
+        };
+      }
+      if (
+        type ===
+          'Per capita water availability and environmental water stress for the period' &&
+        c.name === 'Ethiopia'
+      ) {
+        return {
+          type,
+          assignedTo: slugifyPerson('Isuru'),
+          status: 'done',
+          deadline: null,
+          completedAt,
+          notes: null,
+        };
+      }
+      return {
+        type,
+        assignedTo: null,
+        status: 'not_started',
+        deadline: null,
+        completedAt: null,
+        notes: null,
+      };
+    });
 
     let reportAssigneeId: string | null = null;
     if (c.reportAssignee) {
@@ -154,6 +185,7 @@ export function buildSeed(): AppState {
       reviews,
       flags,
       comments: c.comments,
+      messages: [],
     };
   });
 

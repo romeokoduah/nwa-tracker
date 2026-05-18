@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
+import {
+  BarChart3,
+  FileText,
+  CheckCircle2,
+  ShieldCheck,
+  MessagesSquare,
+} from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNwaStore } from '@/store/useNwaStore';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -13,7 +19,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/common/EmptyState';
 import { TaskStatusBadge, ReportStatusBadge } from '@/components/common/StatusBadge';
 import { FIGURE_META, type FigureType, type TaskStatus, type ReportStatus } from '@/lib/types';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRelative } from '@/lib/format';
 import { useToast } from '@/components/ui/toast';
 
 export function MyWork() {
@@ -23,6 +29,7 @@ export function MyWork() {
   const updateFigure = useNwaStore((s) => s.updateFigure);
   const updateReport = useNwaStore((s) => s.updateReport);
   const toggleReview = useNwaStore((s) => s.toggleReview);
+  const resolveComment = useNwaStore((s) => s.resolveComment);
   const { toast } = useToast();
 
   const member = useMemo(
@@ -65,6 +72,43 @@ export function MyWork() {
         out.push({ countryId: c.id, countryName: c.name, reviewerId: r.reviewerId, done: r.done });
       }
     }
+    return out;
+  }, [countries, currentUser]);
+
+  const myMessages = useMemo(() => {
+    if (!currentUser) return [];
+    const out: {
+      countryId: string;
+      countryName: string;
+      id: string;
+      authorName: string;
+      authorRole: string;
+      scopeLabel: string;
+      body: string;
+      createdAt: string;
+    }[] = [];
+    for (const c of countries) {
+      for (const m of c.messages ?? []) {
+        if (m.resolved) continue;
+        if (!m.recipientIds.includes(currentUser.id)) continue;
+        out.push({
+          countryId: c.id,
+          countryName: c.name,
+          id: m.id,
+          authorName: m.authorName,
+          authorRole: m.authorRole,
+          scopeLabel:
+            m.scope === 'figure' && m.figureType
+              ? FIGURE_META[m.figureType].shortLabel
+              : m.scope === 'report'
+                ? 'Report'
+                : 'General',
+          body: m.body,
+          createdAt: m.createdAt,
+        });
+      }
+    }
+    out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     return out;
   }, [countries, currentUser]);
 
@@ -123,6 +167,62 @@ export function MyWork() {
         <StatCard label="Reports" value={`${reportsMet} / ${myReports.length}`} accent="teal" icon={<FileText className="h-4 w-4" />} />
         <StatCard label="Reviews" value={`${reviewsDone} / ${myReviews.length}`} accent="success" icon={<CheckCircle2 className="h-4 w-4" />} />
       </div>
+
+      {myMessages.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessagesSquare className="h-4 w-4 text-ocean" />
+              Messages to me
+              <span className="ml-1 font-mono text-xs font-normal text-slate-400">
+                {myMessages.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
+              {myMessages.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex flex-col gap-1.5 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <Link
+                        to={`/countries/${m.countryId}`}
+                        className="font-medium text-slate-900 hover:text-ocean dark:text-slate-50"
+                      >
+                        {m.countryName}
+                      </Link>
+                      <Badge variant="muted" className="text-[10px]">
+                        {m.scopeLabel}
+                      </Badge>
+                      <span className="text-[11px] text-slate-400">
+                        {m.authorName} ({m.authorRole}) · {formatRelative(m.createdAt)}
+                      </span>
+                    </div>
+                    <div className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
+                      {m.body}
+                    </div>
+                  </div>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    className="shrink-0 gap-1"
+                    onClick={() => {
+                      resolveComment(m.countryId, m.id);
+                      toast({ title: 'Comment resolved' });
+                    }}
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    Resolve
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {currentUser.isAdmin && !hasAnyWork && (
         <Card>

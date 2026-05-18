@@ -31,10 +31,10 @@ export interface FigureMeta {
 
 export const FIGURE_META: Record<FigureType, FigureMeta> = {
   'Map of country': { shortLabel: 'Country Map', lead: 'Geethya', order: 1 },
-  'Changes in cultivated area': { shortLabel: 'Cultivated Area', lead: null, order: 2 },
+  'Changes in cultivated area': { shortLabel: 'Cultivated Area', lead: 'Isuru', order: 2 },
   'Map showing the spatial distribution of irrigated and rainfed areas': {
     shortLabel: 'Irrigation Map',
-    lead: null,
+    lead: 'Isuru',
     order: 3,
   },
   'River network of country': { shortLabel: 'River Network', lead: 'Tharindu', order: 4 },
@@ -51,7 +51,7 @@ export const FIGURE_META: Record<FigureType, FigureMeta> = {
   },
   'Per capita water availability and environmental water stress for the period': {
     shortLabel: 'Per Capita & Stress',
-    lead: null,
+    lead: 'Isuru',
     order: 8,
   },
 };
@@ -98,6 +98,8 @@ export interface Country {
   reviews: ReviewProgress[];
   flags: string[];
   comments: string | null;
+  /** directed comment thread (reviewers ↔ writers ↔ figure producers) */
+  messages: Comment[];
 }
 
 export type Role = 'admin' | 'figure_producer' | 'figure_lead' | 'reviewer' | 'report_writer';
@@ -111,12 +113,35 @@ export interface TeamMember {
   active: boolean;
 }
 
+export type CommentScope = 'figure' | 'report' | 'general';
+
+export interface Comment {
+  id: ID;
+  countryId: ID;
+  scope: CommentScope;
+  /** set when scope === 'figure' */
+  figureType: FigureType | null;
+  authorId: ID;
+  authorName: string;
+  /** human label for the author's role at time of writing, e.g. "Reviewer" */
+  authorRole: string;
+  /** member ids this comment is directed to (assignees of the section) */
+  recipientIds: ID[];
+  recipientNames: string[];
+  body: string;
+  createdAt: string;
+  /** true when written by a reviewer — drives the "feedback received" status */
+  fromReviewer: boolean;
+  resolved: boolean;
+  resolvedAt: string | null;
+}
+
 export interface ActivityEntry {
   id: ID;
   timestamp: string;
   actor: string;
   action: string;
-  entityType: 'country' | 'figure' | 'report' | 'review' | 'team';
+  entityType: 'country' | 'figure' | 'report' | 'review' | 'team' | 'comment';
   entityId: ID;
 }
 
@@ -127,7 +152,14 @@ export interface AppState {
   lastSyncedAt: string | null;
 }
 
-export const REVIEWERS: string[] = ['Kirubel', 'Mansoor', 'Komalvi', 'Afua', 'Smaranika'];
+export const REVIEWERS: string[] = [
+  'Kirubel',
+  'Mansoor',
+  'Komalvi',
+  'Afua',
+  'Smaranika',
+  'Naga',
+];
 
 export const COMPLETION_BUCKETS = [
   { min: 0, max: 0.25, label: '0–25%', color: '#CBD5E1' },

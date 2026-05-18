@@ -1,10 +1,15 @@
 import type {
+  Comment,
+  CommentScope,
   Country,
   FigureProgress,
+  FigureType,
   ReportProgress,
   ReviewProgress,
   TaskStatus,
+  TeamMember,
 } from './types';
+import { FIGURE_META } from './types';
 import { daysUntil } from './format';
 
 export const isFigureDone = (f: FigureProgress) => f.status === 'done';
@@ -134,4 +139,106 @@ export function statusFromReport(r: ReportProgress): TaskStatus {
 
 export function statusFromReview(r: ReviewProgress): TaskStatus {
   return r.done ? 'done' : 'not_started';
+}
+
+// ── Directed comments / reviewer feedback ────────────────────────────────
+
+/** Unresolved comments written by a reviewer mean "feedback received". */
+export function countryFeedbackCount(country: Country): number {
+  return (country.messages ?? []).filter((m) => m.fromReviewer && !m.resolved)
+    .length;
+}
+
+export function hasReviewerFeedback(country: Country): boolean {
+  return countryFeedbackCount(country) > 0;
+}
+
+/** Comments visible to a given member: ones they sent, ones directed to them,
+ *  or everything for an admin. */
+export function visibleMessages(
+  country: Country,
+  memberId: string | null,
+  isAdmin: boolean,
+): Comment[] {
+  const all = country.messages ?? [];
+  if (isAdmin) return all;
+  if (!memberId) return [];
+  return all.filter(
+    (m) => m.authorId === memberId || m.recipientIds.includes(memberId),
+  );
+}
+
+export interface RecipientInput {
+  country: Country;
+  team: TeamMember[];
+  scope: CommentScope;
+  figureType: FigureType | null;
+  authorId: string;
+  authorIsReviewer: boolean;
+  authorIsReportWriter: boolean;
+}
+
+/**
+ * Route a comment to the people assigned to the relevant section.
+ * - figure scope  → that figure's producer + figure lead
+ * - report scope  → the report writer (+ other report writers if author is one)
+ * - general scope → reviewer/writer broadcast to all section assignees
+ */
+export function deriveRecipients(input: RecipientInput): {
+  ids: string[];
+  names: string[];
+} {
+  const { country, team, scope, figureType, authorId } = input;
+  const byId = new Map(team.map((m) => [m.id, m] as const));
+  const byName = new Map(
+    team.map((m) => [m.name.toLowerCase(), m] as const),
+  );
+  const out = new Set<string>();
+
+  const add = (id: string | null | undefined) => {
+    if (id && id !== authorId && byId.has(id)) out.add(id);
+  };
+
+  const figureProducer = (ft: FigureType) => {
+    const f = country.figures.find((x) => x.type === ft);
+    return f?.assignedTo ?? null;
+  };
+  const figureLeadId = (ft: FigureType) => {
+    const leadName = FIGURE_META[ft].lead;
+    if (!leadName) return null;
+    return byName.get(leadName.toLowerCase())?.id ?? null;
+  };
+  const reportWriters = () => {
+    const ids = new Set<string>();
+    if (country.report.assignedTo) ids.add(country.report.assignedTo);
+    for (const m of team) {
+      if (m.roles.includes('report_writer')) ids.add(m.id);
+    }
+    return [...ids];
+  };
+  const allProducers = () =>
+    country.figures.map((f) => f.assignedTo).filter(Boolean) as string[];
+
+  if (scope === 'figure' && figureType) {
+    add(figureProducer(figureType));
+    add(figureLeadId(figureType));
+  } else if (scope === 'report') {
+    add(country.report.assignedTo);
+    if (input.authorIsReportWriter) reportWriters().forEach(add);
+  } else {
+    // general
+    if (input.authorIsReviewer) {
+      allProducers().forEach(add);
+      add(country.report.assignedTo);
+    } else if (input.authorIsReportWriter) {
+      allProducers().forEach(add);
+      reportWriters().forEach(add);
+    } else {
+      add(country.report.assignedTo);
+      allProducers().forEach(add);
+    }
+  }
+
+  const ids = [...out];
+  return { ids, names: ids.map((id) => byId.get(id)?.name ?? id) };
 }

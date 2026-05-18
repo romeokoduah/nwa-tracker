@@ -74,6 +74,7 @@ export function AddCountryDialog({ open, onOpenChange }: AddCountryDialogProps) 
       })),
       flags: [],
       comments: null,
+      messages: [],
     });
     onOpenChange(false);
   }

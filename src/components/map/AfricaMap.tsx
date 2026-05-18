@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import worldData from '@/assets/world-110m.json';
 import { useNwaStore } from '@/store/useNwaStore';
-import { overallCompletion, countryCompletionBucket } from '@/lib/derive';
+import {
+  overallCompletion,
+  countryCompletionBucket,
+  hasReviewerFeedback,
+} from '@/lib/derive';
+import { FEEDBACK_COLOR } from '@/lib/constants';
 import type { Country } from '@/lib/types';
 import { COMPLETION_BUCKETS } from '@/lib/types';
 import { MapTooltip } from './MapTooltip';
@@ -115,7 +120,9 @@ export function AfricaMap({ height = 480 }: AfricaMapProps) {
                 let fill = '#F1F5F9';
                 let stroke = '#CBD5E1';
                 if (isInScope && country) {
-                  fill = bucketFill(countryCompletionBucket(country));
+                  fill = hasReviewerFeedback(country)
+                    ? FEEDBACK_COLOR
+                    : bucketFill(countryCompletionBucket(country));
                   stroke = 'rgba(255,255,255,0.6)';
                 } else if (isNorth) {
                   fill = '#E2E8F0';

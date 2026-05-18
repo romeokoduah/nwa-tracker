@@ -29,10 +29,12 @@ import {
   isFigureOverdue,
   isReportOverdue,
   overallCompletion,
+  hasReviewerFeedback,
 } from '@/lib/derive';
 import { formatDate, formatRelative } from '@/lib/format';
 import { FIGURE_TYPES, FIGURE_META } from '@/lib/types';
 import { FigureCellEditor } from '@/components/admin/FigureCellEditor';
+import { Discussion } from '@/components/country/Discussion';
 import type { FigureType } from '@/lib/types';
 import { useToast } from '@/components/ui/toast';
 
@@ -42,8 +44,10 @@ export function CountryDetail() {
   const team = useNwaStore((s) => s.team);
   const setCountryComment = useNwaStore((s) => s.setCountryComment);
   const updateReport = useNwaStore((s) => s.updateReport);
+  const updateFigure = useNwaStore((s) => s.updateFigure);
   const toggleReview = useNwaStore((s) => s.toggleReview);
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const currentUser = useAuthStore((s) => s.currentUser);
   const { toast } = useToast();
   const [editing, setEditing] = useState<FigureType | null>(null);
   const [commentDraft, setCommentDraft] = useState<string>(country?.comments ?? '');
@@ -100,6 +104,9 @@ export function CountryDetail() {
                   {f}
                 </Badge>
               ))}
+              {hasReviewerFeedback(country) && (
+                <Badge variant="warning">Reviewer feedback received</Badge>
+              )}
             </div>
           </div>
           <ProgressRing value={overall} size={140} stroke={11} label="Overall" />
@@ -202,6 +209,37 @@ export function CountryDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <TaskStatusBadge status={f.status} overdue={overdue} />
+                        {(() => {
+                          const isProducer =
+                            !!currentUser &&
+                            (f.assignedTo === currentUser.id ||
+                              (!!meta.lead &&
+                                meta.lead.toLowerCase() ===
+                                  currentUser.name.toLowerCase()));
+                          if (!isProducer) return null;
+                          const done = f.status === 'done';
+                          return (
+                            <Button
+                              size="xs"
+                              variant={done ? 'ghost' : 'primary'}
+                              className="gap-1"
+                              onClick={() => {
+                                updateFigure(country.id, type, {
+                                  status: done ? 'in_progress' : 'done',
+                                });
+                                toast({
+                                  title: done
+                                    ? `${type} reopened`
+                                    : `${type} flagged complete`,
+                                  variant: done ? 'info' : 'success',
+                                });
+                              }}
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              {done ? 'Reopen' : 'Flag complete'}
+                            </Button>
+                          );
+                        })()}
                         {isAdmin && (
                           <Button
                             size="xs"
@@ -329,27 +367,30 @@ export function CountryDetail() {
                           )}
                           {r.done ? 'Done' : 'Pending'}
                         </Badge>
-                        {isAdmin && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                onClick={() => {
-                                  toggleReview(country.id, r.reviewerId, !r.done);
-                                  toast({
-                                    title: `${r.done ? 'Cleared' : 'Marked'} ${r.reviewerName}'s review${
-                                      r.done ? '' : ' as done'
-                                    }`,
-                                  });
-                                }}
-                              >
-                                Toggle
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Admin: flip sign-off</TooltipContent>
-                          </Tooltip>
-                        )}
+                        {(() => {
+                          const isMine =
+                            !!currentUser &&
+                            r.reviewerName.toLowerCase() ===
+                              currentUser.name.toLowerCase();
+                          if (!isAdmin && !isMine) return null;
+                          return (
+                            <Button
+                              size="xs"
+                              variant={r.done ? 'ghost' : 'primary'}
+                              onClick={() => {
+                                toggleReview(country.id, r.reviewerId, !r.done);
+                                toast({
+                                  title: r.done
+                                    ? `Reopened ${r.reviewerName}'s review`
+                                    : `${isMine ? 'Signed off' : 'Marked'} ${r.reviewerName}'s review`,
+                                  variant: r.done ? 'info' : 'success',
+                                });
+                              }}
+                            >
+                              {r.done ? 'Reopen' : isMine ? 'Sign off' : 'Mark done'}
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -389,6 +430,8 @@ export function CountryDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <Discussion country={country} />
 
       {editing && (
         <FigureCellEditor
