@@ -108,10 +108,14 @@ export function buildSeed(): AppState {
       // optional flag — not required by spec but useful for lake-sharing demo data
     }
 
-    // Current progress baseline: all country maps are complete and were
-    // produced by the figure lead; Per Capita & Stress is complete for
-    // Ethiopia only (the rest remain not started).
+    // Current progress baseline:
+    //  - figures 1–7 are complete for every country (Map of country was
+    //    produced by its lead, Geethya; figures 2–7 have no recorded producer)
+    //  - figure 8 (Per Capita & Stress) is complete for Ethiopia only,
+    //    produced by Isuru; the rest remain not started.
     const completedAt = raw.metadata.lastSynced ?? '2026-05-18T00:00:00.000Z';
+    const PERCAP =
+      'Per capita water availability and environmental water stress for the period';
     const figures: FigureProgress[] = FIGURE_TYPES.map((type) => {
       if (type === 'Map of country') {
         const leadName = FIGURE_META[type].lead;
@@ -124,26 +128,32 @@ export function buildSeed(): AppState {
           notes: null,
         };
       }
-      if (
-        type ===
-          'Per capita water availability and environmental water stress for the period' &&
-        c.name === 'Ethiopia'
-      ) {
-        return {
-          type,
-          assignedTo: slugifyPerson('Isuru'),
-          status: 'done',
-          deadline: null,
-          completedAt,
-          notes: null,
-        };
+      if (type === PERCAP) {
+        return c.name === 'Ethiopia'
+          ? {
+              type,
+              assignedTo: slugifyPerson('Isuru'),
+              status: 'done',
+              deadline: null,
+              completedAt,
+              notes: null,
+            }
+          : {
+              type,
+              assignedTo: null,
+              status: 'not_started',
+              deadline: null,
+              completedAt: null,
+              notes: null,
+            };
       }
+      // Figures 2–7: complete for every country (producer not recorded)
       return {
         type,
         assignedTo: null,
-        status: 'not_started',
+        status: 'done',
         deadline: null,
-        completedAt: null,
+        completedAt,
         notes: null,
       };
     });
