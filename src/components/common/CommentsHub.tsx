@@ -45,7 +45,7 @@ const STATUS_BADGE = {
 function canResolve(
   country: Country,
   c: Comment,
-  user: { id: string; name: string; roles: string[] },
+  user: { id: string; name: string; roles: readonly string[] },
   isAdmin: boolean,
 ): boolean {
   if (isAdmin) return true;
@@ -54,7 +54,6 @@ function canResolve(
       ?.assignedTo;
     return !!producer && producer === user.id;
   }
-  // report / general → reviewer or admin only (writer cannot self-resolve)
   return (
     user.roles.includes('reviewer') ||
     country.reviews.some(
@@ -63,15 +62,199 @@ function canResolve(
   );
 }
 
-export function CommentsHub() {
+/** Top-level (stable identity) so typing in a reply box doesn't remount it. */
+function CommentBlock({
+  country,
+  m,
+  showCountry,
+}: {
+  country: Country;
+  m: Comment;
+  showCountry?: boolean;
+}) {
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = useAuthStore((s) => s.isAdmin);
-  const countries = useNwaStore((s) => s.countries);
-  const team = useNwaStore((s) => s.team);
-  const addComment = useNwaStore((s) => s.addComment);
   const replyComment = useNwaStore((s) => s.replyComment);
   const acknowledgeComment = useNwaStore((s) => s.acknowledgeComment);
   const resolveComment = useNwaStore((s) => s.resolveComment);
+  const { toast } = useToast();
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyBody, setReplyBody] = useState('');
+
+  if (!currentUser) return null;
+  const author = {
+    id: currentUser.id,
+    name: currentUser.name,
+    roles: currentUser.roles,
+    isAdmin: currentUser.isAdmin,
+  };
+
+  const sb = STATUS_BADGE[m.status] ?? STATUS_BADGE.open;
+  const scopeLabel =
+    m.scope === 'figure' && m.figureType
+      ? FIGURE_META[m.figureType].shortLabel
+      : m.scope === 'report'
+        ? 'Report'
+        : 'General';
+  const needsMe = commentNeedsAttention(m, currentUser.id);
+  const mayResolve =
+    m.status !== 'resolved' && canResolve(country, m, author, isAdmin);
+
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-3',
+        m.blocking && m.status !== 'resolved'
+          ? 'border-danger/40 bg-danger/5'
+          : m.fromReviewer && m.status !== 'resolved'
+            ? 'border-warning/40 bg-warning/5'
+            : 'border-slate-200 dark:border-white/10',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {needsMe && (
+          <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
+        )}
+        <Avatar name={m.authorName} size="xs" />
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-50">
+          {m.authorName}
+        </span>
+        <Badge variant="outline" className="text-[10px]">
+          {m.authorRole}
+        </Badge>
+        {showCountry && (
+          <Link
+            to={`/countries/${country.id}`}
+            className="text-xs text-ocean hover:underline"
+          >
+            {country.name}
+          </Link>
+        )}
+        <Badge variant="muted" className="text-[10px]">
+          {scopeLabel}
+        </Badge>
+        {m.blocking && (
+          <Badge variant="danger" className="gap-1 text-[10px]">
+            <AlertOctagon className="h-3 w-3" />
+            Blocking
+          </Badge>
+        )}
+        <Badge variant={sb.variant} className="text-[10px]">
+          {sb.label}
+        </Badge>
+        <span className="ml-auto text-[11px] text-slate-400">
+          {formatRelative(m.createdAt)}
+        </span>
+      </div>
+      <div className="mt-2 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
+        {m.body}
+      </div>
+      {m.recipientNames.length > 0 && (
+        <div className="mt-1.5 text-[11px] text-slate-400">
+          To: {m.recipientNames.join(', ')}
+        </div>
+      )}
+      {(m.replies ?? []).length > 0 && (
+        <div className="mt-2 flex flex-col gap-2 border-l-2 border-slate-200 pl-3 dark:border-white/10">
+          {m.replies.map((r) => (
+            <div key={r.id}>
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                <CornerDownRight className="h-3 w-3" />
+                <span className="font-medium text-slate-600 dark:text-slate-300">
+                  {r.authorName}
+                </span>
+                <span>· {formatRelative(r.createdAt)}</span>
+              </div>
+              <div className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
+                {r.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {m.status !== 'resolved' && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            size="xs"
+            variant="ghost"
+            className="gap-1"
+            onClick={() => setReplyOpen((v) => !v)}
+          >
+            <CornerDownRight className="h-3 w-3" />
+            Reply
+          </Button>
+          {needsMe && (
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() =>
+                acknowledgeComment(country.id, m.id, {
+                  id: currentUser.id,
+                  name: currentUser.name,
+                })
+              }
+            >
+              Acknowledge
+            </Button>
+          )}
+          {mayResolve && (
+            <Button
+              size="xs"
+              variant="ghost"
+              className="gap-1 text-success"
+              onClick={() => {
+                resolveComment(country.id, m.id, {
+                  id: currentUser.id,
+                  name: currentUser.name,
+                });
+                toast({ title: 'Comment resolved', variant: 'success' });
+              }}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              Resolve
+            </Button>
+          )}
+        </div>
+      )}
+      {replyOpen && (
+        <div className="mt-2 flex flex-col gap-2">
+          <Textarea
+            value={replyBody}
+            onChange={(e) => setReplyBody(e.target.value)}
+            placeholder="Write a reply…"
+            rows={2}
+          />
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!replyBody.trim()}
+              onClick={() => {
+                replyComment({
+                  countryId: country.id,
+                  commentId: m.id,
+                  body: replyBody,
+                  author,
+                });
+                setReplyBody('');
+                setReplyOpen(false);
+                toast({ title: 'Reply posted' });
+              }}
+            >
+              Post reply
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function CommentsHub() {
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const countries = useNwaStore((s) => s.countries);
+  const team = useNwaStore((s) => s.team);
+  const addComment = useNwaStore((s) => s.addComment);
   const toggleReview = useNwaStore((s) => s.toggleReview);
   const { toast } = useToast();
 
@@ -80,8 +263,6 @@ export function CommentsHub() {
   const [figureType, setFigureType] = useState<FigureType>(FIGURE_TYPES[0]);
   const [blocking, setBlocking] = useState(false);
   const [body, setBody] = useState('');
-  const [replyOpen, setReplyOpen] = useState<string | null>(null);
-  const [replyBody, setReplyBody] = useState('');
 
   const sortedCountries = useMemo(
     () => [...countries].sort((a, b) => a.name.localeCompare(b.name)),
@@ -138,42 +319,52 @@ export function CommentsHub() {
         );
         return review ? { country: c, review } : null;
       })
-      .filter((x): x is { country: Country; review: Country['reviews'][number] } => !!x);
+      .filter(
+        (x): x is { country: Country; review: Country['reviews'][number] } =>
+          !!x,
+      );
   }, [countries, currentUser]);
 
   const threads = useMemo(() => {
     if (!currentUser) return [];
     const out: { country: Country; comment: Comment }[] = [];
     for (const c of countries) {
-      for (const m of visibleMessages(c, currentUser.id, isAdmin)) {
+      for (const m of visibleMessages(c, currentUser.id, currentUser.isAdmin)) {
         out.push({ country: c, comment: m });
       }
     }
     return out.sort((a, b) =>
       a.comment.createdAt < b.comment.createdAt ? 1 : -1,
     );
-  }, [countries, currentUser, isAdmin]);
+  }, [countries, currentUser]);
 
   if (!currentUser || !author) {
     return (
       <Card>
-        <CardContent className="flex items-center gap-2 p-4 text-sm text-slate-500">
-          <MessagesSquare className="h-4 w-4" />
-          Sign in to leave comments, respond to feedback and sign off.
+        <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm text-slate-600 dark:text-slate-300">
+          <MessagesSquare className="h-4 w-4 text-ocean" />
+          <span>
+            <strong>Comments &amp; sign-off</strong> — sign in (your name +
+            shared password) to leave comments, respond to feedback and sign
+            off.
+          </span>
+          <Button asChild size="sm" variant="primary" className="ml-auto">
+            <Link to="/login">Sign in</Link>
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
   function send() {
-    if (!countryId || !body.trim()) return;
+    if (!countryId || !body.trim() || !author) return;
     addComment({
       countryId,
       scope,
       figureType: scope === 'figure' ? figureType : null,
       body,
       blocking,
-      author: author!,
+      author,
     });
     setBody('');
     setBlocking(false);
@@ -183,178 +374,6 @@ export function CommentsHub() {
         : 'Comment posted',
       variant: 'success',
     });
-  }
-
-  function CommentBlock({
-    country,
-    m,
-    compact,
-  }: {
-    country: Country;
-    m: Comment;
-    compact?: boolean;
-  }) {
-    const sb = STATUS_BADGE[m.status];
-    const scopeLabel =
-      m.scope === 'figure' && m.figureType
-        ? FIGURE_META[m.figureType].shortLabel
-        : m.scope === 'report'
-          ? 'Report'
-          : 'General';
-    const needsMe = commentNeedsAttention(m, currentUser!.id);
-    const mayResolve =
-      m.status !== 'resolved' &&
-      canResolve(country, m, author!, isAdmin);
-    return (
-      <div
-        className={cn(
-          'rounded-xl border p-3',
-          m.blocking && m.status !== 'resolved'
-            ? 'border-danger/40 bg-danger/5'
-            : m.fromReviewer && m.status !== 'resolved'
-              ? 'border-warning/40 bg-warning/5'
-              : 'border-slate-200 dark:border-white/10',
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          {needsMe && (
-            <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
-          )}
-          <Avatar name={m.authorName} size="xs" />
-          <span className="text-sm font-medium text-slate-900 dark:text-slate-50">
-            {m.authorName}
-          </span>
-          <Badge variant="outline" className="text-[10px]">
-            {m.authorRole}
-          </Badge>
-          {!compact && (
-            <Link
-              to={`/countries/${country.id}`}
-              className="text-xs text-ocean hover:underline"
-            >
-              {country.name}
-            </Link>
-          )}
-          <Badge variant="muted" className="text-[10px]">
-            {scopeLabel}
-          </Badge>
-          {m.blocking && (
-            <Badge variant="danger" className="gap-1 text-[10px]">
-              <AlertOctagon className="h-3 w-3" />
-              Blocking
-            </Badge>
-          )}
-          <Badge variant={sb.variant} className="text-[10px]">
-            {sb.label}
-          </Badge>
-          <span className="ml-auto text-[11px] text-slate-400">
-            {formatRelative(m.createdAt)}
-          </span>
-        </div>
-        <div className="mt-2 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
-          {m.body}
-        </div>
-        {m.recipientNames.length > 0 && (
-          <div className="mt-1.5 text-[11px] text-slate-400">
-            To: {m.recipientNames.join(', ')}
-          </div>
-        )}
-        {(m.replies ?? []).length > 0 && (
-          <div className="mt-2 flex flex-col gap-2 border-l-2 border-slate-200 pl-3 dark:border-white/10">
-            {m.replies.map((r) => (
-              <div key={r.id}>
-                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
-                  <CornerDownRight className="h-3 w-3" />
-                  <span className="font-medium text-slate-600 dark:text-slate-300">
-                    {r.authorName}
-                  </span>
-                  <span>· {formatRelative(r.createdAt)}</span>
-                </div>
-                <div className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
-                  {r.body}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {m.status !== 'resolved' && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Button
-              size="xs"
-              variant="ghost"
-              className="gap-1"
-              onClick={() =>
-                setReplyOpen(replyOpen === m.id ? null : m.id)
-              }
-            >
-              <CornerDownRight className="h-3 w-3" />
-              Reply
-            </Button>
-            {needsMe && (
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() =>
-                  acknowledgeComment(country.id, m.id, {
-                    id: currentUser!.id,
-                    name: currentUser!.name,
-                  })
-                }
-              >
-                Acknowledge
-              </Button>
-            )}
-            {mayResolve && (
-              <Button
-                size="xs"
-                variant="ghost"
-                className="gap-1 text-success"
-                onClick={() => {
-                  resolveComment(country.id, m.id, {
-                    id: currentUser!.id,
-                    name: currentUser!.name,
-                  });
-                  toast({ title: 'Comment resolved', variant: 'success' });
-                }}
-              >
-                <CheckCircle2 className="h-3 w-3" />
-                Resolve
-              </Button>
-            )}
-          </div>
-        )}
-        {replyOpen === m.id && (
-          <div className="mt-2 flex flex-col gap-2">
-            <Textarea
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-              placeholder="Write a reply…"
-              rows={2}
-            />
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="primary"
-                disabled={!replyBody.trim()}
-                onClick={() => {
-                  replyComment({
-                    countryId: country.id,
-                    commentId: m.id,
-                    body: replyBody,
-                    author: author!,
-                  });
-                  setReplyBody('');
-                  setReplyOpen(null);
-                  toast({ title: 'Reply posted' });
-                }}
-              >
-                Post reply
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
   }
 
   return (
@@ -372,7 +391,6 @@ export function CommentsHub() {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        {/* Notifications */}
         {attention.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-danger">
@@ -383,20 +401,25 @@ export function CommentsHub() {
                 key={comment.id}
                 className="rounded-xl border border-danger/30 bg-danger/5 p-3"
               >
-                <div className="mb-1 flex items-center gap-2 text-xs text-slate-500">
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
                   {role === 'recipient'
                     ? 'You were asked to respond'
                     : 'Your comment got a reply'}{' '}
-                  · <Link to={`/countries/${country.id}`} className="text-ocean hover:underline">{country.name}</Link>
+                  ·{' '}
+                  <Link
+                    to={`/countries/${country.id}`}
+                    className="text-ocean hover:underline"
+                  >
+                    {country.name}
+                  </Link>
                 </div>
-                <CommentBlock country={country} m={comment} compact />
+                <CommentBlock country={country} m={comment} />
               </div>
             ))}
           </div>
         )}
 
-        {/* Composer */}
         <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 dark:border-white/10">
           <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
             Leave a comment
@@ -484,7 +507,6 @@ export function CommentsHub() {
           </div>
         </div>
 
-        {/* Sign-off */}
         {myReviewCountries.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
@@ -538,8 +560,8 @@ export function CommentsHub() {
                   </div>
                   {gated && (
                     <div className="mt-2 rounded-lg border border-danger/30 bg-danger/5 p-2 text-[11px] text-danger">
-                      Sign-off pending resolution — you have{' '}
-                      {blockers.length} unresolved blocking comment
+                      Sign-off pending resolution — you have {blockers.length}{' '}
+                      unresolved blocking comment
                       {blockers.length > 1 ? 's' : ''} on this country.
                     </div>
                   )}
@@ -549,23 +571,23 @@ export function CommentsHub() {
           </div>
         )}
 
-        {/* Threads */}
         <div className="flex flex-col gap-2">
           <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
             Conversations ({threads.length})
           </div>
           {threads.length === 0 ? (
             <div className="py-4 text-center text-xs text-slate-400">
-              No comments you can see yet.
+              No comments yet. Use “Leave a comment” above to start one.
             </div>
           ) : (
             threads
-              .slice(0, 30)
+              .slice(0, 40)
               .map(({ country, comment }) => (
                 <CommentBlock
                   key={comment.id}
                   country={country}
                   m={comment}
+                  showCountry
                 />
               ))
           )}
