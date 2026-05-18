@@ -434,13 +434,8 @@ export function CommentsHub() {
         )}
 
         <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 dark:border-white/10">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
-              Leave a comment
-            </span>
-            <span className="text-[11px] text-slate-400">
-              Reviewers: report &amp; figures · Report writers: figures only
-            </span>
+          <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-teal">
+            Leave a comment
           </div>
           {allowedScopes.length === 0 ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
