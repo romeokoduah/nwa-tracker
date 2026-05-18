@@ -29,7 +29,6 @@ export function MyWork() {
   const updateFigure = useNwaStore((s) => s.updateFigure);
   const updateReport = useNwaStore((s) => s.updateReport);
   const toggleReview = useNwaStore((s) => s.toggleReview);
-  const resolveComment = useNwaStore((s) => s.resolveComment);
   const { toast } = useToast();
 
   const member = useMemo(
@@ -89,7 +88,7 @@ export function MyWork() {
     }[] = [];
     for (const c of countries) {
       for (const m of c.messages ?? []) {
-        if (m.resolved) continue;
+        if (m.status === 'resolved') continue;
         if (!m.recipientIds.includes(currentUser.id)) continue;
         out.push({
           countryId: c.id,
@@ -206,16 +205,15 @@ export function MyWork() {
                     </div>
                   </div>
                   <Button
+                    asChild
                     size="xs"
                     variant="ghost"
                     className="shrink-0 gap-1"
-                    onClick={() => {
-                      resolveComment(m.countryId, m.id);
-                      toast({ title: 'Comment resolved' });
-                    }}
                   >
-                    <CheckCircle2 className="h-3 w-3" />
-                    Resolve
+                    <Link to="/">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Respond on Overview
+                    </Link>
                   </Button>
                 </div>
               ))}

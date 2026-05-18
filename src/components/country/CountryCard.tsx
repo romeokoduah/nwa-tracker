@@ -12,6 +12,7 @@ import {
   isCountryComplete,
   countOverdue,
   hasReviewerFeedback,
+  commentCounts,
 } from '@/lib/derive';
 import { Badge } from '@/components/ui/badge';
 import { COMPLETION_BUCKETS } from '@/lib/types';
@@ -30,6 +31,7 @@ export function CountryCard({ country }: CountryCardProps) {
   const bucket = countryCompletionBucket(country);
   const complete = isCountryComplete(country);
   const overdue = countOverdue(country);
+  const cc = commentCounts(country);
 
   return (
     <Link
@@ -68,6 +70,21 @@ export function CountryCard({ country }: CountryCardProps) {
               {complete && <Badge variant="success">Complete</Badge>}
               {hasReviewerFeedback(country) && (
                 <Badge variant="warning">Feedback</Badge>
+              )}
+              {cc.total > 0 && (
+                <Badge
+                  variant={
+                    cc.blockingOpen > 0
+                      ? 'danger'
+                      : cc.open > 0
+                        ? 'warning'
+                        : 'muted'
+                  }
+                  className="gap-1"
+                >
+                  <MessageSquare className="h-3 w-3" />
+                  {cc.open + cc.responded} open · {cc.resolved} resolved
+                </Badge>
               )}
               {overdue > 0 && <Badge variant="danger">{overdue} overdue</Badge>}
               {country.comments && (

@@ -12,12 +12,31 @@ import type {
   ActivityEntry,
   AppState,
   Comment,
+  CommentReply,
   Country,
   FigureProgress,
   FigureType,
   ReportProgress,
   TeamMember,
 } from './types';
+
+/** Back-fill new comment fields on data written before the redesign. */
+function normalizeComment(c: Comment): Comment {
+  const legacy = c as Comment & { resolved?: boolean };
+  return {
+    ...c,
+    blocking: c.blocking ?? false,
+    status: c.status ?? (legacy.resolved ? 'resolved' : 'open'),
+    replies: c.replies ?? [],
+    acknowledgedBy: c.acknowledgedBy ?? [],
+    resolvedAt: c.resolvedAt ?? null,
+    resolvedBy: c.resolvedBy ?? null,
+  };
+}
+
+function normalizeCountryMessages(c: Country): Country {
+  return { ...c, messages: (c.messages ?? []).map(normalizeComment) };
+}
 
 export const ACTIVITY_LIMIT = 500;
 
@@ -68,10 +87,27 @@ export type Mutation =
     }
   | { t: 'addComment'; comment: Comment; act: ActivityEntry }
   | {
+      t: 'replyComment';
+      countryId: string;
+      commentId: string;
+      reply: CommentReply;
+      /** true when the reply is from a recipient (moves status -> responded) */
+      fromRecipient: boolean;
+      act: ActivityEntry;
+    }
+  | {
+      t: 'acknowledgeComment';
+      countryId: string;
+      commentId: string;
+      userId: string;
+      act: ActivityEntry;
+    }
+  | {
       t: 'resolveComment';
       countryId: string;
       commentId: string;
       resolvedAt: string;
+      resolvedBy: string;
       act: ActivityEntry;
     }
   | { t: 'logActivity'; act: ActivityEntry }
@@ -91,6 +127,8 @@ export const MUTATION_TYPES: readonly Mutation['t'][] = [
   'removeCountry',
   'bulkAssignFigure',
   'addComment',
+  'replyComment',
+  'acknowledgeComment',
   'resolveComment',
   'logActivity',
   'replaceState',
@@ -105,10 +143,7 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
   switch (m.t) {
     case 'replaceState':
       return {
-        countries: m.state.countries.map((c) => ({
-          ...c,
-          messages: c.messages ?? [],
-        })),
+        countries: m.state.countries.map(normalizeCountryMessages),
         team: m.state.team,
         activity: m.state.activity ?? [],
         lastSyncedAt: m.state.lastSyncedAt ?? null,
@@ -125,6 +160,60 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
         activity: withActivity(state.activity, m.act),
       };
 
+    case 'replyComment':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.countryId
+            ? c
+            : {
+                ...c,
+                messages: (c.messages ?? []).map((msg) =>
+                  msg.id !== m.commentId
+                    ? msg
+                    : {
+                        ...msg,
+                        replies: [...(msg.replies ?? []), m.reply],
+                        // a recipient's reply moves Open -> Responded;
+                        // never downgrade a Resolved thread.
+                        status:
+                          msg.status === 'resolved'
+                            ? 'resolved'
+                            : m.fromRecipient
+                              ? 'responded'
+                              : msg.status,
+                        // a new reply re-raises attention for the other side
+                        acknowledgedBy: [],
+                      },
+                ),
+              },
+        ),
+        activity: withActivity(state.activity, m.act),
+      };
+
+    case 'acknowledgeComment':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.countryId
+            ? c
+            : {
+                ...c,
+                messages: (c.messages ?? []).map((msg) =>
+                  msg.id !== m.commentId
+                    ? msg
+                    : {
+                        ...msg,
+                        acknowledgedBy: msg.acknowledgedBy.includes(m.userId)
+                          ? msg.acknowledgedBy
+                          : [...msg.acknowledgedBy, m.userId],
+                      },
+                ),
+              },
+        ),
+        activity: withActivity(state.activity, m.act),
+      };
+
     case 'resolveComment':
       return {
         ...state,
@@ -135,7 +224,12 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
                 ...c,
                 messages: (c.messages ?? []).map((msg) =>
                   msg.id === m.commentId
-                    ? { ...msg, resolved: true, resolvedAt: m.resolvedAt }
+                    ? {
+                        ...msg,
+                        status: 'resolved',
+                        resolvedAt: m.resolvedAt,
+                        resolvedBy: m.resolvedBy,
+                      }
                     : msg,
                 ),
               },

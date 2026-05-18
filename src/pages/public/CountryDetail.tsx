@@ -30,6 +30,7 @@ import {
   isReportOverdue,
   overallCompletion,
   hasReviewerFeedback,
+  canReviewerSignOff,
 } from '@/lib/derive';
 import { formatDate, formatRelative } from '@/lib/format';
 import { FIGURE_TYPES, FIGURE_META } from '@/lib/types';
@@ -373,22 +374,43 @@ export function CountryDetail() {
                             r.reviewerName.toLowerCase() ===
                               currentUser.name.toLowerCase();
                           if (!isAdmin && !isMine) return null;
+                          const gated =
+                            isMine &&
+                            !r.done &&
+                            !!currentUser &&
+                            !canReviewerSignOff(country, currentUser.id);
                           return (
-                            <Button
-                              size="xs"
-                              variant={r.done ? 'ghost' : 'primary'}
-                              onClick={() => {
-                                toggleReview(country.id, r.reviewerId, !r.done);
-                                toast({
-                                  title: r.done
-                                    ? `Reopened ${r.reviewerName}'s review`
-                                    : `${isMine ? 'Signed off' : 'Marked'} ${r.reviewerName}'s review`,
-                                  variant: r.done ? 'info' : 'success',
-                                });
-                              }}
-                            >
-                              {r.done ? 'Reopen' : isMine ? 'Sign off' : 'Mark done'}
-                            </Button>
+                            <div className="flex flex-col items-end gap-1">
+                              <Button
+                                size="xs"
+                                variant={r.done ? 'ghost' : 'primary'}
+                                disabled={gated}
+                                onClick={() => {
+                                  toggleReview(
+                                    country.id,
+                                    r.reviewerId,
+                                    !r.done,
+                                  );
+                                  toast({
+                                    title: r.done
+                                      ? `Reopened ${r.reviewerName}'s review`
+                                      : `${isMine ? 'Signed off' : 'Marked'} ${r.reviewerName}'s review`,
+                                    variant: r.done ? 'info' : 'success',
+                                  });
+                                }}
+                              >
+                                {r.done
+                                  ? 'Reopen'
+                                  : isMine
+                                    ? 'Sign off'
+                                    : 'Mark done'}
+                              </Button>
+                              {gated && (
+                                <span className="text-[10px] text-danger">
+                                  Resolve your blocking comments first
+                                </span>
+                              )}
+                            </div>
                           );
                         })()}
                       </div>

@@ -16,12 +16,27 @@ import { seedData } from '@/lib/seed';
 import { deriveRecipients } from '@/lib/derive';
 import { applyMutation, type Mutation } from '@/lib/mutations';
 
+export interface CommentAuthor {
+  id: string;
+  name: string;
+  roles: Role[];
+  isAdmin: boolean;
+}
+
 export interface AddCommentInput {
   countryId: string;
   scope: CommentScope;
   figureType: FigureType | null;
   body: string;
-  author: { id: string; name: string; roles: Role[]; isAdmin: boolean };
+  blocking: boolean;
+  author: CommentAuthor;
+}
+
+export interface ReplyCommentInput {
+  countryId: string;
+  commentId: string;
+  body: string;
+  author: CommentAuthor;
 }
 
 function nextId(): string {
@@ -56,6 +71,32 @@ function slugify(name: string): string {
     .replace(/['']/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function commentAuthorMeta(
+  country: Country,
+  author: { id: string; name: string; roles: Role[]; isAdmin: boolean },
+) {
+  const isReviewer =
+    author.roles.includes('reviewer') ||
+    country.reviews.some(
+      (r) => r.reviewerName.toLowerCase() === author.name.toLowerCase(),
+    );
+  const isReportWriter =
+    author.roles.includes('report_writer') ||
+    country.report.assignedTo === author.id;
+  const roleLabel = author.isAdmin
+    ? 'Admin'
+    : isReviewer
+      ? 'Reviewer'
+      : isReportWriter
+        ? 'Report writer'
+        : author.roles.includes('figure_lead')
+          ? 'Figure lead'
+          : author.roles.includes('figure_producer')
+            ? 'Figure producer'
+            : 'Team';
+  return { isReviewer, isReportWriter, roleLabel };
 }
 
 export type SyncStatus = 'connecting' | 'live' | 'error';
@@ -110,7 +151,17 @@ interface NwaStore extends AppState {
 
   // directed comments
   addComment: (input: AddCommentInput) => void;
-  resolveComment: (countryId: string, commentId: string) => void;
+  replyComment: (input: ReplyCommentInput) => void;
+  acknowledgeComment: (
+    countryId: string,
+    commentId: string,
+    user: { id: string; name: string },
+  ) => void;
+  resolveComment: (
+    countryId: string,
+    commentId: string,
+    by: { id: string; name: string },
+  ) => void;
 
   // activity
   logActivity: (entry: ActivityInput) => void;
@@ -384,34 +435,19 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
       const s = get();
       const country = s.countries.find((c) => c.id === input.countryId);
       if (!country || !input.body.trim()) return;
-      const authorIsReviewer =
-        input.author.roles.includes('reviewer') ||
-        country.reviews.some(
-          (r) => r.reviewerName.toLowerCase() === input.author.name.toLowerCase(),
-        );
-      const authorIsReportWriter =
-        input.author.roles.includes('report_writer') ||
-        country.report.assignedTo === input.author.id;
+      const { isReviewer, isReportWriter, roleLabel } = commentAuthorMeta(
+        country,
+        input.author,
+      );
       const { ids, names } = deriveRecipients({
         country,
         team: s.team,
         scope: input.scope,
         figureType: input.figureType ?? null,
         authorId: input.author.id,
-        authorIsReviewer,
-        authorIsReportWriter,
+        authorIsReviewer: isReviewer,
+        authorIsReportWriter: isReportWriter,
       });
-      const roleLabel = input.author.isAdmin
-        ? 'Admin'
-        : authorIsReviewer
-          ? 'Reviewer'
-          : authorIsReportWriter
-            ? 'Report writer'
-            : input.author.roles.includes('figure_lead')
-              ? 'Figure lead'
-              : input.author.roles.includes('figure_producer')
-                ? 'Figure producer'
-                : 'Team';
       const id = nextId();
       const comment: Comment = {
         id,
@@ -425,9 +461,13 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         recipientNames: names,
         body: input.body.trim(),
         createdAt: nowISO(),
-        fromReviewer: authorIsReviewer,
-        resolved: false,
+        fromReviewer: isReviewer,
+        blocking: input.blocking,
+        status: 'open',
+        replies: [],
+        acknowledgedBy: [],
         resolvedAt: null,
+        resolvedBy: null,
       };
       const scopeLabel =
         input.scope === 'figure' && input.figureType
@@ -440,22 +480,72 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         comment,
         act: makeAct({
           actor: input.author.name,
-          action: `${input.author.name} commented on ${country.name} · ${scopeLabel}`,
+          action: `${input.author.name} left a ${input.blocking ? 'blocking' : 'non-blocking'} comment on ${country.name} · ${scopeLabel}`,
           entityType: 'comment',
           entityId: `${input.countryId}:${id}`,
         }),
       });
     },
 
-    resolveComment: (countryId, commentId) => {
+    replyComment: (input) => {
+      const s = get();
+      const country = s.countries.find((c) => c.id === input.countryId);
+      if (!country || !input.body.trim()) return;
+      const comment = (country.messages ?? []).find(
+        (m) => m.id === input.commentId,
+      );
+      if (!comment) return;
+      const { roleLabel } = commentAuthorMeta(country, input.author);
+      const reply = {
+        id: nextId(),
+        authorId: input.author.id,
+        authorName: input.author.name,
+        authorRole: roleLabel,
+        body: input.body.trim(),
+        createdAt: nowISO(),
+      };
+      commit({
+        t: 'replyComment',
+        countryId: input.countryId,
+        commentId: input.commentId,
+        reply,
+        fromRecipient: input.author.id !== comment.authorId,
+        act: makeAct({
+          actor: input.author.name,
+          action: `${input.author.name} replied to a comment on ${country.name}`,
+          entityType: 'comment',
+          entityId: `${input.countryId}:${input.commentId}`,
+        }),
+      });
+    },
+
+    acknowledgeComment: (countryId, commentId, user) =>
+      commit({
+        t: 'acknowledgeComment',
+        countryId,
+        commentId,
+        userId: user.id,
+        act: makeAct({
+          actor: user.name,
+          action: `${user.name} acknowledged a comment on ${
+            get().countries.find((x) => x.id === countryId)?.name ?? countryId
+          }`,
+          entityType: 'comment',
+          entityId: `${countryId}:${commentId}`,
+        }),
+      }),
+
+    resolveComment: (countryId, commentId, by) => {
       const c = get().countries.find((x) => x.id === countryId);
       commit({
         t: 'resolveComment',
         countryId,
         commentId,
         resolvedAt: nowISO(),
+        resolvedBy: by.id,
         act: makeAct({
-          action: `Resolved a comment on ${c?.name ?? countryId}`,
+          actor: by.name,
+          action: `${by.name} resolved a comment on ${c?.name ?? countryId}`,
           entityType: 'comment',
           entityId: `${countryId}:${commentId}`,
         }),

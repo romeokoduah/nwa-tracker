@@ -145,12 +145,104 @@ export function statusFromReview(r: ReviewProgress): TaskStatus {
 
 /** Unresolved comments written by a reviewer mean "feedback received". */
 export function countryFeedbackCount(country: Country): number {
-  return (country.messages ?? []).filter((m) => m.fromReviewer && !m.resolved)
-    .length;
+  return (country.messages ?? []).filter(
+    (m) => m.fromReviewer && m.status !== 'resolved',
+  ).length;
 }
 
 export function hasReviewerFeedback(country: Country): boolean {
   return countryFeedbackCount(country) > 0;
+}
+
+export interface CommentCounts {
+  open: number;
+  responded: number;
+  resolved: number;
+  blockingOpen: number;
+  total: number;
+}
+
+export function commentCounts(country: Country): CommentCounts {
+  const c: CommentCounts = {
+    open: 0,
+    responded: 0,
+    resolved: 0,
+    blockingOpen: 0,
+    total: 0,
+  };
+  for (const m of country.messages ?? []) {
+    c.total++;
+    if (m.status === 'resolved') c.resolved++;
+    else if (m.status === 'responded') c.responded++;
+    else c.open++;
+    if (m.blocking && m.status !== 'resolved') c.blockingOpen++;
+  }
+  return c;
+}
+
+/** Does this comment need the given user's attention (drives the blink)? */
+export function commentNeedsAttention(c: Comment, userId: string): boolean {
+  if (c.status === 'resolved') return false;
+  const replies = c.replies ?? [];
+  const ack = c.acknowledgedBy ?? [];
+  const recipients = c.recipientIds ?? [];
+  const repliedByMe = replies.some((r) => r.authorId === userId);
+  const lastReply = replies[replies.length - 1];
+  if (recipients.includes(userId) && userId !== c.authorId) {
+    // recipient: needs to respond/acknowledge until they do
+    return !ack.includes(userId) && !repliedByMe;
+  }
+  if (c.authorId === userId) {
+    // author: notified when the other side has replied
+    return !!lastReply && lastReply.authorId !== userId && !ack.includes(userId);
+  }
+  return false;
+}
+
+export interface AttentionItem {
+  country: Country;
+  comment: Comment;
+  role: 'recipient' | 'author';
+}
+
+export function attentionForUser(
+  countries: Country[],
+  userId: string | null,
+): AttentionItem[] {
+  if (!userId) return [];
+  const out: AttentionItem[] = [];
+  for (const country of countries) {
+    for (const comment of country.messages ?? []) {
+      if (commentNeedsAttention(comment, userId)) {
+        out.push({
+          country,
+          comment,
+          role: comment.authorId === userId ? 'author' : 'recipient',
+        });
+      }
+    }
+  }
+  return out.sort((a, b) =>
+    a.comment.createdAt < b.comment.createdAt ? 1 : -1,
+  );
+}
+
+/** Blocking comments authored by a user that are not yet resolved — these
+ *  defer that user's sign-off on the country. */
+export function unresolvedBlockingByAuthor(
+  country: Country,
+  userId: string,
+): Comment[] {
+  return (country.messages ?? []).filter(
+    (m) => m.authorId === userId && m.blocking && m.status !== 'resolved',
+  );
+}
+
+export function canReviewerSignOff(
+  country: Country,
+  userId: string,
+): boolean {
+  return unresolvedBlockingByAuthor(country, userId).length === 0;
 }
 
 /** Comments visible to a given member: ones they sent, ones directed to them,

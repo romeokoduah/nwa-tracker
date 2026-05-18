@@ -114,6 +114,16 @@ export interface TeamMember {
 }
 
 export type CommentScope = 'figure' | 'report' | 'general';
+export type CommentStatus = 'open' | 'responded' | 'resolved';
+
+export interface CommentReply {
+  id: ID;
+  authorId: ID;
+  authorName: string;
+  authorRole: string;
+  body: string;
+  createdAt: string;
+}
 
 export interface Comment {
   id: ID;
@@ -132,8 +142,14 @@ export interface Comment {
   createdAt: string;
   /** true when written by a reviewer — drives the "feedback received" status */
   fromReviewer: boolean;
-  resolved: boolean;
+  /** blocking comments gate the author's sign-off until resolved */
+  blocking: boolean;
+  status: CommentStatus;
+  replies: CommentReply[];
+  /** recipient ids who have acknowledged (clears their attention indicator) */
+  acknowledgedBy: ID[];
   resolvedAt: string | null;
+  resolvedBy: ID | null;
 }
 
 export interface ActivityEntry {

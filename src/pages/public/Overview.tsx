@@ -14,6 +14,7 @@ import { WorkstreamHeatmaps } from '@/components/charts/WorkstreamHeatmaps';
 import { WorkloadBar } from '@/components/charts/WorkloadBar';
 import { DeadlineHorizonCard } from '@/components/charts/DeadlineTimeline';
 import { ActivityFeed } from '@/components/common/ActivityFeed';
+import { CommentsHub } from '@/components/common/CommentsHub';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PROGRAMME_NAME, PROGRAMME_SUBTITLE } from '@/lib/constants';
@@ -130,6 +131,9 @@ export function Overview() {
           accent="rose"
         />
       </div>
+
+      {/* Comments & sign-off */}
+      <CommentsHub />
 
       {/* Workstreams */}
       <div className="grid gap-4 lg:grid-cols-3">
