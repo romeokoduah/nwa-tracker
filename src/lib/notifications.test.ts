@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { AppState, Country, TeamMember } from './types';
+import type { AppState, Country, TeamMember, Comment, CommentReply } from './types';
+import { FIGURE_TYPES } from './types';
 import type { Mutation } from './mutations';
 import { computeNotifications, type NotifyCtx } from './notifications';
 
@@ -72,5 +73,47 @@ describe('report assignment', () => {
     const next = state({ team: [isuru], countries: [country('c1', { report: { assignedTo: 'isuru', status: 'not_started', deadline: null, completedAt: null, notes: null } })] });
     const m: Mutation = { t: 'updateReport', countryId: 'c1', patch: { assignedTo: 'isuru' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
     expect(computeNotifications(prev, next, m, { ...CTX, actorId: 'isuru' })).toHaveLength(0);
+  });
+});
+
+describe('figure assignment', () => {
+  const fig = FIGURE_TYPES[0]; // 'Map of country' -> shortLabel 'Country Map'
+  function withFigure(assignedTo: string | null) {
+    return country('c1', {
+      name: 'Mali',
+      figures: [{ type: fig, assignedTo, status: 'not_started', deadline: null, completedAt: null, notes: null }],
+    });
+  }
+
+  it('emails the assignee when a figure assignee changes', () => {
+    const geethya = member('geethya');
+    const prev = state({ team: [geethya], countries: [withFigure(null)] });
+    const next = state({ team: [geethya], countries: [withFigure('geethya')] });
+    const m: Mutation = { t: 'updateFigure', countryId: 'c1', figureType: fig, patch: { assignedTo: 'geethya' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    const msgs = computeNotifications(prev, next, m, CTX);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].to).toBe('geethya@cgiar.org');
+    expect(msgs[0].subject).toContain('Country Map');
+    expect(msgs[0].subject).toContain('Mali');
+  });
+
+  it('coalesces a bulk figure assignment into one email', () => {
+    const eric = member('eric');
+    const next = state({
+      team: [eric],
+      countries: [country('c1', { name: 'Ghana' }), country('c2', { name: 'Gambia' })],
+    });
+    const m: Mutation = { t: 'bulkAssignFigure', countryIds: ['c1', 'c2'], figureType: fig, memberId: 'eric', act: act() };
+    const msgs = computeNotifications(next, next, m, CTX);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].to).toBe('eric@cgiar.org');
+    expect(msgs[0].text).toContain('Ghana');
+    expect(msgs[0].text).toContain('Gambia');
+  });
+
+  it('sends nothing when a bulk figure assignment clears the assignee', () => {
+    const next = state({ team: [member('eric')], countries: [country('c1')] });
+    const m: Mutation = { t: 'bulkAssignFigure', countryIds: ['c1'], figureType: fig, memberId: null, act: act() };
+    expect(computeNotifications(next, next, m, CTX)).toHaveLength(0);
   });
 });

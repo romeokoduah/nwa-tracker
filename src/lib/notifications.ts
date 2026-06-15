@@ -118,5 +118,53 @@ export function computeNotifications(
     return [];
   }
 
+  if (m.t === 'updateFigure') {
+    const c = countryById(next, m.countryId);
+    if (!c) return [];
+    if ('assignedTo' in m.patch) {
+      const before = countryById(prev, m.countryId)?.figures.find((f) => f.type === m.figureType)?.assignedTo ?? null;
+      const after = m.patch.assignedTo ?? null;
+      if (after && after !== before) {
+        const label = FIGURE_META[m.figureType].shortLabel;
+        return recipients(next, [after], ctx).map((r) =>
+          build(
+            r.email,
+            `[NWA Tracker] You've been assigned the ${label} figure for ${c.name}`,
+            [
+              `You've been assigned the "${label}" figure for ${c.name}.`,
+              actor ? `Assigned by ${actor.name}.` : '',
+            ],
+            link(ctx, `/countries/${c.id}`),
+            replyTo,
+          ),
+        );
+      }
+    }
+    return [];
+  }
+
+  if (m.t === 'bulkAssignFigure') {
+    if (!m.memberId) return [];
+    const recips = recipients(next, [m.memberId], ctx);
+    if (recips.length === 0) return [];
+    const label = FIGURE_META[m.figureType].shortLabel;
+    const names = m.countryIds
+      .map((id) => countryById(next, id)?.name)
+      .filter((n): n is string => Boolean(n));
+    if (names.length === 0) return [];
+    return recips.map((r) =>
+      build(
+        r.email,
+        `[NWA Tracker] You've been assigned the ${label} figure for ${names.length} ${names.length === 1 ? 'country' : 'countries'}`,
+        [
+          `You've been assigned the "${label}" figure for: ${names.join(', ')}.`,
+          actor ? `Assigned by ${actor.name}.` : '',
+        ],
+        link(ctx, `/figures`),
+        replyTo,
+      ),
+    );
+  }
+
   return [];
 }
