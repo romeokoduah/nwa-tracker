@@ -10,6 +10,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyMutation, isMutation } from '../src/lib/mutations.js';
 import { ensureSchema, readState, casState } from './_db.js';
 import { preflight, parseBody, fail } from './_http.js';
+import { waitUntil } from '@vercel/functions';
+import { computeNotifications } from '../src/lib/notifications.js';
+import { sendEmails } from './_mailer.js';
 
 const MAX_RETRIES = 6;
 
@@ -22,12 +25,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     await ensureSchema();
 
-    const body = parseBody<{ mutation?: unknown }>(req);
+    const body = parseBody<{ mutation?: unknown; actorId?: unknown }>(req);
     if (!isMutation(body.mutation)) {
       res.status(400).json({ error: 'bad_request', message: 'Missing/invalid `mutation`' });
       return;
     }
     const mutation = body.mutation;
+    const actorId = typeof body.actorId === 'string' ? body.actorId : null;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       const row = await readState();
@@ -40,6 +44,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const next = applyMutation(row.data, mutation);
       const newVersion = await casState(row.version, next);
       if (newVersion !== null) {
+        if (process.env.NOTIFICATIONS_ENABLED === 'true') {
+          try {
+            const msgs = computeNotifications(row.data, next, mutation, {
+              actorId,
+              appBaseUrl: (process.env.APP_BASE_URL ?? '').replace(/\/$/, ''),
+              adminEmail: process.env.ADMIN_NOTIFY_EMAIL || process.env.GMAIL_USER || '',
+            });
+            if (msgs.length) waitUntil(sendEmails(msgs));
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[notify] compute failed:', err);
+          }
+        }
         res.status(200).json({ version: newVersion });
         return;
       }
