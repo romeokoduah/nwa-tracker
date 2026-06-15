@@ -117,3 +117,63 @@ describe('figure assignment', () => {
     expect(computeNotifications(next, next, m, CTX)).toHaveLength(0);
   });
 });
+
+function comment(over: Partial<Comment> = {}): Comment {
+  return {
+    id: 'm1',
+    countryId: 'c1',
+    scope: 'report',
+    figureType: null,
+    authorId: 'admin',
+    authorName: 'Admin',
+    authorRole: 'Admin',
+    recipientIds: ['isuru'],
+    recipientNames: ['Isuru'],
+    body: 'Please update the totals.',
+    createdAt: '2026-06-15T00:00:00Z',
+    fromReviewer: false,
+    blocking: false,
+    status: 'open',
+    replies: [],
+    acknowledgedBy: [],
+    resolvedAt: null,
+    resolvedBy: null,
+    ...over,
+  };
+}
+
+describe('directed comments', () => {
+  const base = () => state({ team: [member('isuru'), member('naga', { roles: ['reviewer'] })], countries: [country('c1', { name: 'Mali' })] });
+
+  it('emails the recipients of a new comment', () => {
+    const c = comment();
+    const next = base();
+    next.countries[0].messages = [c];
+    const m: Mutation = { t: 'addComment', comment: c, act: act() };
+    const msgs = computeNotifications(base(), next, m, CTX);
+    expect(msgs.map((x) => x.to)).toEqual(['isuru@cgiar.org']);
+    expect(msgs[0].subject).toContain('New comment');
+    expect(msgs[0].text).toContain('Please update the totals.');
+  });
+
+  it('uses reviewer-feedback wording when fromReviewer', () => {
+    const c = comment({ authorId: 'naga', authorName: 'Naga', fromReviewer: true });
+    const next = base();
+    const m: Mutation = { t: 'addComment', comment: c, act: act() };
+    const msgs = computeNotifications(base(), next, m, { ...CTX, actorId: 'naga' });
+    expect(msgs[0].subject).toContain('Reviewer feedback');
+  });
+
+  it('uses action-needed wording when blocking', () => {
+    const c = comment({ blocking: true });
+    const m: Mutation = { t: 'addComment', comment: c, act: act() };
+    const msgs = computeNotifications(base(), base(), m, CTX);
+    expect(msgs[0].subject).toContain('Action needed');
+  });
+
+  it('never emails the comment author even if they are also a recipient', () => {
+    const c = comment({ authorId: 'isuru', authorName: 'Isuru', recipientIds: ['isuru'] });
+    const m: Mutation = { t: 'addComment', comment: c, act: act() };
+    expect(computeNotifications(base(), base(), m, { ...CTX, actorId: 'isuru' })).toHaveLength(0);
+  });
+});

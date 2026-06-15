@@ -166,5 +166,40 @@ export function computeNotifications(
     );
   }
 
+  if (m.t === 'addComment') {
+    const c = m.comment;
+    const country = countryById(next, c.countryId);
+    if (!country) return [];
+    const recips = recipients(next, c.recipientIds, ctx, [c.authorId]);
+    if (recips.length === 0) return [];
+
+    const sectionLabel =
+      c.scope === 'figure' && c.figureType
+        ? FIGURE_META[c.figureType].shortLabel
+        : c.scope === 'report'
+          ? 'report'
+          : 'general discussion';
+
+    const subject = c.blocking
+      ? `[NWA Tracker] Action needed: comment on ${country.name}`
+      : c.fromReviewer
+        ? `[NWA Tracker] Reviewer feedback on ${country.name}`
+        : `[NWA Tracker] New comment on ${country.name}`;
+
+    return recips.map((r) =>
+      build(
+        r.email,
+        subject,
+        [
+          `${c.authorName} left a ${c.blocking ? 'blocking ' : ''}comment on ${country.name} (${sectionLabel}):`,
+          `"${c.body}"`,
+          c.blocking ? 'This comment is blocking and needs your response.' : '',
+        ],
+        link(ctx, `/countries/${country.id}`),
+        replyTo,
+      ),
+    );
+  }
+
   return [];
 }
