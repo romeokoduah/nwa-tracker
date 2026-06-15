@@ -192,3 +192,48 @@ describe('replies', () => {
     expect(msgs[0].text).toContain('Done, fixed.');
   });
 });
+
+describe('reviews and status changes', () => {
+  function reviewed(reportAssignee: string | null) {
+    return country('c1', {
+      name: 'Niger',
+      report: { assignedTo: reportAssignee, status: 'in_progress', deadline: null, completedAt: null, notes: null },
+      reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', done: false, completedAt: null, comments: null }],
+    });
+  }
+
+  it('emails the report owner when a review is completed', () => {
+    const team = [member('afua'), member('naga', { roles: ['reviewer'] })];
+    const next = state({ team, countries: [reviewed('afua')] });
+    const m: Mutation = { t: 'toggleReview', countryId: 'c1', reviewerId: 'naga', done: true, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    const msgs = computeNotifications(next, next, m, { ...CTX, actorId: 'naga' });
+    expect(msgs.map((x) => x.to)).toEqual(['afua@cgiar.org']);
+    expect(msgs[0].subject).toContain('Review completed');
+  });
+
+  it('does not email when a review is un-completed', () => {
+    const next = state({ team: [member('afua')], countries: [reviewed('afua')] });
+    const m: Mutation = { t: 'toggleReview', countryId: 'c1', reviewerId: 'naga', done: false, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    expect(computeNotifications(next, next, m, CTX)).toHaveLength(0);
+  });
+
+  it('emails the reviewers when report status becomes in_review', () => {
+    const team = [member('afua'), member('naga', { roles: ['reviewer'] })];
+    const prev = state({ team, countries: [reviewed('afua')] });
+    const next = state({ team, countries: [{ ...reviewed('afua'), report: { assignedTo: 'afua', status: 'in_review', deadline: null, completedAt: null, notes: null } }] });
+    const m: Mutation = { t: 'updateReport', countryId: 'c1', patch: { status: 'in_review' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    const msgs = computeNotifications(prev, next, m, { ...CTX, actorId: 'afua' });
+    expect(msgs.map((x) => x.to)).toEqual(['naga@cgiar.org']);
+    expect(msgs[0].subject).toContain('Ready for your review');
+  });
+
+  it('emails the assignee and admin when report status becomes blocked', () => {
+    const team = [member('afua')];
+    const prev = state({ team, countries: [reviewed('afua')] });
+    const next = state({ team, countries: [{ ...reviewed('afua'), report: { assignedTo: 'afua', status: 'blocked', deadline: null, completedAt: null, notes: null } }] });
+    const m: Mutation = { t: 'updateReport', countryId: 'c1', patch: { status: 'blocked' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    const msgs = computeNotifications(prev, next, m, CTX); // actor = admin (not the assignee)
+    const tos = msgs.map((x) => x.to).sort();
+    expect(tos).toEqual(['admin@cgiar.org', 'afua@cgiar.org']);
+  });
+});

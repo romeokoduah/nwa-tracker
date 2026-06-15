@@ -85,6 +85,51 @@ function build(
   return replyTo ? { to, replyTo, subject, text, html } : { to, subject, text, html };
 }
 
+/** Emails for a section status transition (report or figure). */
+function statusMessages(
+  next: AppState,
+  country: Country,
+  sectionLabel: string,
+  newStatus: string,
+  assigneeId: string | null,
+  ctx: NotifyCtx,
+  replyTo: string | undefined,
+): EmailMessage[] {
+  const url = link(ctx, `/countries/${country.id}`);
+  if (newStatus === 'in_review') {
+    const reviewerIds = country.reviews.map((rv) => rv.reviewerId);
+    return recipients(next, reviewerIds, ctx).map((r) =>
+      build(
+        r.email,
+        `[NWA Tracker] Ready for your review: ${country.name} (${sectionLabel})`,
+        [`The ${sectionLabel} for ${country.name} is ready for your review.`],
+        url,
+        replyTo,
+      ),
+    );
+  }
+  if (newStatus === 'blocked') {
+    const seen = new Set<string>();
+    const emails: string[] = [];
+    for (const r of recipients(next, [assigneeId], ctx)) {
+      if (!seen.has(r.email.toLowerCase())) { seen.add(r.email.toLowerCase()); emails.push(r.email); }
+    }
+    if (ctx.adminEmail && ctx.adminEmail.toLowerCase() !== (memberById(next, ctx.actorId)?.email ?? '').toLowerCase() && !seen.has(ctx.adminEmail.toLowerCase())) {
+      emails.push(ctx.adminEmail);
+    }
+    return emails.map((to) =>
+      build(
+        to,
+        `[NWA Tracker] Blocked: ${country.name} (${sectionLabel})`,
+        [`The ${sectionLabel} for ${country.name} has been marked blocked.`],
+        url,
+        replyTo,
+      ),
+    );
+  }
+  return [];
+}
+
 export function computeNotifications(
   prev: AppState,
   next: AppState,
@@ -115,6 +160,12 @@ export function computeNotifications(
         );
       }
     }
+    if ('status' in m.patch && m.patch.status) {
+      const before = countryById(prev, m.countryId)?.report.status;
+      if (m.patch.status !== before) {
+        return statusMessages(next, c, 'report', m.patch.status, c.report.assignedTo, ctx, replyTo);
+      }
+    }
     return [];
   }
 
@@ -138,6 +189,13 @@ export function computeNotifications(
             replyTo,
           ),
         );
+      }
+    }
+    if ('status' in m.patch && m.patch.status) {
+      const before = countryById(prev, m.countryId)?.figures.find((f) => f.type === m.figureType)?.status;
+      if (m.patch.status !== before) {
+        const fig = c.figures.find((f) => f.type === m.figureType);
+        return statusMessages(next, c, FIGURE_META[m.figureType].shortLabel, m.patch.status, fig?.assignedTo ?? null, ctx, replyTo);
       }
     }
     return [];
@@ -217,6 +275,22 @@ export function computeNotifications(
         r.email,
         `[NWA Tracker] New reply on ${country.name}`,
         [`${m.reply.authorName} replied on ${country.name}:`, `"${m.reply.body}"`],
+        link(ctx, `/countries/${country.id}`),
+        replyTo,
+      ),
+    );
+  }
+
+  if (m.t === 'toggleReview') {
+    if (!m.done) return [];
+    const country = countryById(next, m.countryId);
+    if (!country) return [];
+    const reviewerName = country.reviews.find((rv) => rv.reviewerId === m.reviewerId)?.reviewerName ?? 'A reviewer';
+    return recipients(next, [country.report.assignedTo], ctx).map((r) =>
+      build(
+        r.email,
+        `[NWA Tracker] Review completed for ${country.name}`,
+        [`${reviewerName} completed their review of ${country.name}.`],
         link(ctx, `/countries/${country.id}`),
         replyTo,
       ),
