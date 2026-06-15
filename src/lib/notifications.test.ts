@@ -177,3 +177,18 @@ describe('directed comments', () => {
     expect(computeNotifications(base(), base(), m, { ...CTX, actorId: 'isuru' })).toHaveLength(0);
   });
 });
+
+describe('replies', () => {
+  it('emails all thread participants except the replier', () => {
+    const team = [member('admin', { name: 'Admin' }), member('isuru'), member('naga')];
+    const reply: CommentReply = { id: 'r1', authorId: 'isuru', authorName: 'Isuru', authorRole: 'Writer', body: 'Done, fixed.', createdAt: '2026-06-15T01:00:00Z' };
+    const threaded = comment({ authorId: 'naga', authorName: 'Naga', recipientIds: ['isuru'], replies: [reply] });
+    const next = state({ team, countries: [country('c1', { name: 'Mali', messages: [threaded] })] });
+    const m: Mutation = { t: 'replyComment', countryId: 'c1', commentId: 'm1', reply, fromRecipient: true, act: act() };
+    const msgs = computeNotifications(next, next, m, { ...CTX, actorId: 'isuru' });
+    // participants: naga (author) + isuru (recipient) + isuru (replier); replier removed -> naga only
+    expect(msgs.map((x) => x.to)).toEqual(['naga@cgiar.org']);
+    expect(msgs[0].subject).toContain('reply');
+    expect(msgs[0].text).toContain('Done, fixed.');
+  });
+});

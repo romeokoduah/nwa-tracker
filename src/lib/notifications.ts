@@ -201,5 +201,27 @@ export function computeNotifications(
     );
   }
 
+  if (m.t === 'replyComment') {
+    const country = countryById(next, m.countryId);
+    const thread = country?.messages?.find((x) => x.id === m.commentId);
+    if (!country || !thread) return [];
+    const participantIds = [
+      thread.authorId,
+      ...thread.recipientIds,
+      ...thread.replies.map((rep) => rep.authorId),
+    ];
+    const recips = recipients(next, participantIds, ctx, [m.reply.authorId]);
+    if (recips.length === 0) return [];
+    return recips.map((r) =>
+      build(
+        r.email,
+        `[NWA Tracker] New reply on ${country.name}`,
+        [`${m.reply.authorName} replied on ${country.name}:`, `"${m.reply.body}"`],
+        link(ctx, `/countries/${country.id}`),
+        replyTo,
+      ),
+    );
+  }
+
   return [];
 }
