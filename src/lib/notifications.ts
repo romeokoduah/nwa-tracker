@@ -109,12 +109,11 @@ function statusMessages(
     );
   }
   if (newStatus === 'blocked') {
-    const seen = new Set<string>();
-    const emails: string[] = [];
-    for (const r of recipients(next, [assigneeId], ctx)) {
-      if (!seen.has(r.email.toLowerCase())) { seen.add(r.email.toLowerCase()); emails.push(r.email); }
-    }
-    if (ctx.adminEmail && ctx.adminEmail.toLowerCase() !== (memberById(next, ctx.actorId)?.email ?? '').toLowerCase() && !seen.has(ctx.adminEmail.toLowerCase())) {
+    // recipients() already de-dupes by email and drops the actor/inactive/no-email.
+    const emails = recipients(next, [assigneeId], ctx).map((r) => r.email);
+    const actorEmail = memberById(next, ctx.actorId)?.email?.toLowerCase();
+    const adminLower = ctx.adminEmail.toLowerCase();
+    if (ctx.adminEmail && adminLower !== actorEmail && !emails.some((e) => e.toLowerCase() === adminLower)) {
       emails.push(ctx.adminEmail);
     }
     return emails.map((to) =>
@@ -228,6 +227,9 @@ export function computeNotifications(
     const c = m.comment;
     const country = countryById(next, c.countryId);
     if (!country) return [];
+    // Retry-safe: if this comment already existed before the mutation, this is a
+    // re-applied (duplicate) mutation — don't email again.
+    if (countryById(prev, c.countryId)?.messages?.some((x) => x.id === c.id)) return [];
     const recips = recipients(next, c.recipientIds, ctx, [c.authorId]);
     if (recips.length === 0) return [];
 
@@ -263,6 +265,9 @@ export function computeNotifications(
     const country = countryById(next, m.countryId);
     const thread = country?.messages?.find((x) => x.id === m.commentId);
     if (!country || !thread) return [];
+    // Retry-safe: skip if this reply already existed before the mutation.
+    const prevThread = countryById(prev, m.countryId)?.messages?.find((x) => x.id === m.commentId);
+    if (prevThread?.replies?.some((rep) => rep.id === m.reply.id)) return [];
     const participantIds = [
       thread.authorId,
       ...thread.recipientIds,
