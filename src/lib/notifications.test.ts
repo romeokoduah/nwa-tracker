@@ -227,11 +227,20 @@ describe('reviews and status changes', () => {
     expect(msgs[0].subject).toContain('Ready for your review');
   });
 
-  it('emails the assignee and admin when report status becomes blocked', () => {
+  // Note: only figures carry a 'blocked' status (TaskStatus); reports (ReportStatus)
+  // cannot be blocked, so the blocked mapping is exercised via a figure.
+  it('emails the figure assignee and admin when a figure status becomes blocked', () => {
     const team = [member('afua')];
-    const prev = state({ team, countries: [reviewed('afua')] });
-    const next = state({ team, countries: [{ ...reviewed('afua'), report: { assignedTo: 'afua', status: 'blocked', deadline: null, completedAt: null, notes: null } }] });
-    const m: Mutation = { t: 'updateReport', countryId: 'c1', patch: { status: 'blocked' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
+    const fig0 = FIGURE_TYPES[0];
+    const withFig = (status: Country['figures'][number]['status']) =>
+      country('c1', {
+        name: 'Niger',
+        figures: [{ type: fig0, assignedTo: 'afua', status, deadline: null, completedAt: null, notes: null }],
+        reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', done: false, completedAt: null, comments: null }],
+      });
+    const prev = state({ team, countries: [withFig('in_progress')] });
+    const next = state({ team, countries: [withFig('blocked')] });
+    const m: Mutation = { t: 'updateFigure', countryId: 'c1', figureType: fig0, patch: { status: 'blocked' }, nowISO: '2026-06-15T00:00:00Z', act: act() };
     const msgs = computeNotifications(prev, next, m, CTX); // actor = admin (not the assignee)
     const tos = msgs.map((x) => x.to).sort();
     expect(tos).toEqual(['admin@cgiar.org', 'afua@cgiar.org']);
