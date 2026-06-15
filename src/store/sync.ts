@@ -7,6 +7,7 @@
  * inject the dispatchers into the store via `_bindSync`.
  */
 import { useNwaStore } from './useNwaStore';
+import { useAuthStore } from './useAuthStore';
 import { seedData } from '@/lib/seed';
 import { ApiError, getState, getVersion, postMutation, putState } from '@/lib/api';
 import type { Mutation } from '@/lib/mutations';
@@ -16,7 +17,7 @@ const POLL_MS = 3000;
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let started = false;
-let queue: Mutation[] = [];
+let queue: { m: Mutation; actorId: string | null }[] = [];
 let processing = false;
 
 function store() {
@@ -65,9 +66,9 @@ async function processQueue() {
   processing = true;
   try {
     while (queue.length > 0) {
-      const m = queue[0];
+      const item = queue[0];
       try {
-        const { version } = await postMutation(m);
+        const { version } = await postMutation(item.m, item.actorId);
         queue.shift();
         // Adopt the server version. If others also wrote, the next poll pulls
         // their changes in (server already has ours merged on top).
@@ -106,7 +107,8 @@ async function processQueue() {
 
 /** Called by store mutating actions, after the optimistic local apply. */
 export function enqueueMutation(m: Mutation) {
-  queue.push(m);
+  const actorId = useAuthStore.getState().currentUser?.id ?? null;
+  queue.push({ m, actorId });
   void processQueue();
 }
 

@@ -54,10 +54,13 @@ export function getVersion(): Promise<{ version: number }> {
   return request<{ version: number }>('/api/version');
 }
 
-export function postMutation(mutation: Mutation): Promise<{ version: number }> {
+export function postMutation(
+  mutation: Mutation,
+  actorId: string | null = null,
+): Promise<{ version: number }> {
   return request<{ version: number }>('/api/mutate', {
     method: 'POST',
-    body: JSON.stringify({ mutation }),
+    body: JSON.stringify({ mutation, actorId }),
   });
 }
 
