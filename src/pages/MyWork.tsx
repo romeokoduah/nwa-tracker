@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   MessagesSquare,
+  AlarmClock,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNwaStore } from '@/store/useNwaStore';
@@ -85,6 +86,7 @@ export function MyWork() {
       scopeLabel: string;
       body: string;
       createdAt: string;
+      reminder: boolean;
     }[] = [];
     for (const c of countries) {
       for (const m of c.messages ?? []) {
@@ -104,6 +106,7 @@ export function MyWork() {
                 : 'General',
           body: m.body,
           createdAt: m.createdAt,
+          reminder: !!m.reminder,
         });
       }
     }
@@ -117,6 +120,8 @@ export function MyWork() {
   const reportsMet = myReports.filter((r) => r.status === 'met').length;
   const reviewsDone = myReviews.filter((r) => r.done).length;
   const hasAnyWork = myFigures.length + myReports.length + myReviews.length > 0;
+  const myReminders = myMessages.filter((m) => m.reminder);
+  const otherMessages = myMessages.filter((m) => !m.reminder);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -167,20 +172,59 @@ export function MyWork() {
         <StatCard label="Reviews" value={`${reviewsDone} / ${myReviews.length}`} accent="success" icon={<CheckCircle2 className="h-4 w-4" />} />
       </div>
 
-      {myMessages.length > 0 && (
+      {myReminders.length > 0 && (
+        <Card className="border-warning/40 bg-warning/5 dark:bg-warning/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-warning">
+              <AlarmClock className="h-4 w-4" />
+              Reminders for you
+              <span className="ml-1 font-mono text-xs font-normal text-warning/80">
+                {myReminders.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col divide-y divide-warning/20">
+              {myReminders.map((m) => (
+                <div key={m.id} className="flex flex-col gap-1 py-3">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <Link
+                      to={`/countries/${m.countryId}`}
+                      className="font-semibold text-slate-900 hover:underline dark:text-slate-50"
+                    >
+                      {m.countryName}
+                    </Link>
+                    <Badge variant="muted" className="text-[10px]">
+                      {m.scopeLabel}
+                    </Badge>
+                    <span className="text-[11px] text-slate-500">
+                      {m.authorName} · {formatRelative(m.createdAt)}
+                    </span>
+                  </div>
+                  <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
+                    {m.body}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {otherMessages.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <MessagesSquare className="h-4 w-4 text-ocean" />
               Messages to me
               <span className="ml-1 font-mono text-xs font-normal text-slate-400">
-                {myMessages.length}
+                {otherMessages.length}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
-              {myMessages.map((m) => (
+              {otherMessages.map((m) => (
                 <div
                   key={m.id}
                   className="flex flex-col gap-1.5 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3"

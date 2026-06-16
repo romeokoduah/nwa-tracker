@@ -21,6 +21,7 @@ import { AdminTeam } from '@/pages/admin/AdminTeam';
 import { AdminDeadlines } from '@/pages/admin/AdminDeadlines';
 import { AdminActivity } from '@/pages/admin/AdminActivity';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
+import { AdminMailing } from '@/pages/admin/AdminMailing';
 
 export function Router() {
   return (
@@ -91,6 +92,14 @@ export function Router() {
           element={
             <AdminGate>
               <AdminActivity />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="admin/mailing"
+          element={
+            <AdminGate>
+              <AdminMailing />
             </AdminGate>
           }
         />

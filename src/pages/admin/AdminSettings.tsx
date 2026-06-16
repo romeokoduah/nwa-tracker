@@ -21,6 +21,8 @@ export function AdminSettings() {
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const { toast } = useToast();
   const { dark, toggle } = useDarkMode();
+  const notificationsEnabled = useNwaStore((s) => s.settings?.notificationsEnabled ?? true);
+  const updateSettings = useNwaStore((s) => s.updateSettings);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -107,6 +109,35 @@ export function AdminSettings() {
               <div className="text-xs text-slate-500">Preference persists across reloads.</div>
             </div>
             <Switch checked={dark} onCheckedChange={() => toggle()} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 p-3 dark:border-white/5">
+            <div>
+              <Label className="text-sm font-medium normal-case tracking-normal text-slate-700 dark:text-slate-200">
+                Email notifications
+              </Label>
+              <div className="text-xs text-slate-500">
+                When on, assignments, comments, replies, reviews and reminders email the
+                relevant people. Applies to everyone, instantly.
+              </div>
+            </div>
+            <Switch
+              checked={notificationsEnabled}
+              onCheckedChange={(v) => {
+                updateSettings({ notificationsEnabled: v });
+                toast({
+                  title: v ? 'Notifications turned on' : 'Notifications turned off',
+                  variant: v ? 'success' : 'info',
+                });
+              }}
+            />
           </div>
         </CardContent>
       </Card>
