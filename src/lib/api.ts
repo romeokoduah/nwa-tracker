@@ -70,3 +70,21 @@ export function putState(data: AppState): Promise<{ version: number }> {
     body: JSON.stringify({ data }),
   });
 }
+
+export interface SendMailResult {
+  sent: number;
+  skipped: string[];
+  disabled?: boolean;
+}
+
+export function postSendMail(input: {
+  recipientIds: string[];
+  subject: string;
+  body: string;
+  actorId: string | null;
+}): Promise<SendMailResult> {
+  return request<SendMailResult>('/api/send-mail', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}

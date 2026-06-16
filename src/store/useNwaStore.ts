@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  AppSettings,
   AppState,
   ActivityEntry,
   Comment,
@@ -36,6 +37,17 @@ export interface ReplyCommentInput {
   countryId: string;
   commentId: string;
   body: string;
+  author: CommentAuthor;
+}
+
+export interface SendReminderInput {
+  countryId: string;
+  recipientId: string;
+  recipientName: string;
+  scope: CommentScope;
+  figureType?: FigureType | null;
+  body: string;
+  /** the admin/coordinator triggering the reminder (used as the comment author id) */
   author: CommentAuthor;
 }
 
@@ -162,6 +174,12 @@ interface NwaStore extends AppState {
     commentId: string,
     by: { id: string; name: string },
   ) => void;
+
+  // reminders (coordinator -> assignee/reviewer): shows on dashboard + emails
+  sendReminder: (input: SendReminderInput) => void;
+
+  // settings
+  updateSettings: (patch: Partial<AppSettings>) => void;
 
   // activity
   logActivity: (entry: ActivityInput) => void;
@@ -401,6 +419,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         team: s.team,
         activity: s.activity,
         lastSyncedAt: nowISO(),
+        settings: s.settings,
       };
       return JSON.stringify(payload, null, 2);
     },
@@ -415,6 +434,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         team: parsed.team,
         activity: parsed.activity ?? [],
         lastSyncedAt: parsed.lastSyncedAt ?? nowISO(),
+        settings: parsed.settings,
       };
       set(() => next);
       void dispatch?.replace(next);
@@ -552,6 +572,61 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
       });
     },
 
+    sendReminder: (input) => {
+      const s = get();
+      const country = s.countries.find((c) => c.id === input.countryId);
+      if (!country || !input.body.trim()) return;
+      const scopeLabel =
+        input.scope === 'figure' && input.figureType
+          ? FIGURE_META[input.figureType].shortLabel
+          : input.scope === 'report'
+            ? 'Report'
+            : 'General';
+      const id = nextId();
+      const comment: Comment = {
+        id,
+        countryId: input.countryId,
+        scope: input.scope,
+        figureType: input.scope === 'figure' ? (input.figureType ?? null) : null,
+        authorId: input.author.id,
+        authorName: 'Coordinating Team',
+        authorRole: 'Coordinator',
+        recipientIds: [input.recipientId],
+        recipientNames: [input.recipientName],
+        body: input.body.trim(),
+        createdAt: nowISO(),
+        fromReviewer: false,
+        blocking: false,
+        reminder: true,
+        status: 'open',
+        replies: [],
+        acknowledgedBy: [],
+        resolvedAt: null,
+        resolvedBy: null,
+      };
+      commit({
+        t: 'addComment',
+        comment,
+        act: makeAct({
+          actor: 'Coordinating Team',
+          action: `Reminder sent to ${input.recipientName} for ${country.name} · ${scopeLabel}`,
+          entityType: 'comment',
+          entityId: `${input.countryId}:${id}`,
+        }),
+      });
+    },
+
+    updateSettings: (patch) =>
+      commit({
+        t: 'updateSettings',
+        patch,
+        act: makeAct({
+          action: `Updated notification settings`,
+          entityType: 'team',
+          entityId: 'settings',
+        }),
+      }),
+
     logActivity: (entry) =>
       commit({ t: 'logActivity', act: makeAct(entry) }),
 
@@ -568,6 +643,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         team: data.team,
         activity: data.activity ?? [],
         lastSyncedAt: data.lastSyncedAt ?? null,
+        settings: data.settings,
         version,
       })),
 
@@ -583,6 +659,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         team: s.team,
         activity: s.activity,
         lastSyncedAt: s.lastSyncedAt,
+        settings: s.settings,
       };
     },
   };
