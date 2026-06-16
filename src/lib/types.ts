@@ -144,6 +144,8 @@ export interface Comment {
   fromReviewer: boolean;
   /** blocking comments gate the author's sign-off until resolved */
   blocking: boolean;
+  /** true when this is a coordinator reminder (distinct dashboard styling + email wording) */
+  reminder?: boolean;
   status: CommentStatus;
   replies: CommentReply[];
   /** recipient ids who have acknowledged (clears their attention indicator) */
@@ -161,11 +163,19 @@ export interface ActivityEntry {
   entityId: ID;
 }
 
+export interface AppSettings {
+  /** in-app master switch for outbound email notifications (admin-controlled) */
+  notificationsEnabled: boolean;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = { notificationsEnabled: true };
+
 export interface AppState {
   countries: Country[];
   team: TeamMember[];
   activity: ActivityEntry[];
   lastSyncedAt: string | null;
+  settings?: AppSettings;
 }
 
 export const REVIEWERS: string[] = [
