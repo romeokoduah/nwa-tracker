@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { useNwaStore } from '@/store/useNwaStore';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { AddMemberDialog } from '@/components/admin/AddMemberDialog';
+import { EditMemberDialog } from '@/components/admin/EditMemberDialog';
 import { useToast } from '@/components/ui/toast';
 import type { Role } from '@/lib/types';
 
@@ -32,8 +33,10 @@ export function AdminTeam() {
   const removeMember = useNwaStore((s) => s.removeMember);
   const [addOpen, setAddOpen] = useState(false);
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [toEdit, setToEdit] = useState<string | null>(null);
   const { toast } = useToast();
   const target = toDelete ? team.find((m) => m.id === toDelete) : null;
+  const editing = toEdit ? team.find((m) => m.id === toEdit) ?? null : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,14 +83,25 @@ export function AdminTeam() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    className="text-danger hover:bg-danger/10 hover:text-danger"
-                    onClick={() => setToDelete(m.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="gap-1 text-slate-500 hover:text-ocean"
+                      onClick={() => setToEdit(m.id)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-danger hover:bg-danger/10 hover:text-danger"
+                      onClick={() => setToDelete(m.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -95,6 +109,7 @@ export function AdminTeam() {
         </Table>
       </Card>
       <AddMemberDialog open={addOpen} onOpenChange={setAddOpen} />
+      <EditMemberDialog member={editing} onOpenChange={(o) => !o && setToEdit(null)} />
       {target && (
         <ConfirmDialog
           open={!!target}
