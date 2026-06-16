@@ -39,7 +39,7 @@ export function AdminAssignments() {
       <PageHeader
         eyebrow="Admin"
         title="Assignment matrix"
-        subtitle="Delegate figures, reports and reviewer sign-offs to the team."
+        subtitle="Assign figures, reports and reviews across the team."
       />
       <Tabs defaultValue="figures">
         <TabsList>

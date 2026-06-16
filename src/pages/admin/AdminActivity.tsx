@@ -36,7 +36,7 @@ export function AdminActivity() {
       <PageHeader
         eyebrow="Admin"
         title="Activity log"
-        subtitle="Every mutation made to the tracker, latest first."
+        subtitle="A chronological record of all changes, most recent first."
       />
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-elev dark:border-white/5 dark:bg-deep">
         <SearchInput

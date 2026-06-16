@@ -50,7 +50,7 @@ export function Countries() {
       <PageHeader
         eyebrow="Programme"
         title="Countries"
-        subtitle={`${countries.length} Sub-Saharan African countries tracked. Filter, sort and drill into any country.`}
+        subtitle={`${countries.length} Sub-Saharan African countries in the programme.`}
         actions={
           <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 dark:border-white/10 dark:bg-deep">
             <button

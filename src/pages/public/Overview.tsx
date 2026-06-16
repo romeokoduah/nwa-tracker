@@ -1,5 +1,6 @@
 import { Globe2, ListChecks, Flame, Clock } from 'lucide-react';
 import { useNwaStore } from '@/store/useNwaStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   selectActiveTaskCount,
   selectApproachingDeadlinesCount,
@@ -53,6 +54,7 @@ export function Overview() {
   );
   const totalCountries = useNwaStore((s) => s.countries.length);
   const lastSyncedAt = useNwaStore((s) => s.lastSyncedAt);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -63,14 +65,14 @@ export function Overview() {
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan">
               <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan" />
-              Live programme dashboard
+              Programme overview
             </div>
             <h1 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
               {PROGRAMME_NAME}
             </h1>
             <p className="mt-2 max-w-xl text-sm text-cyan/90 md:text-base">
-              {PROGRAMME_SUBTITLE}. Three workstreams — figures, report, reviews — tracked
-              per country, by team.
+              {PROGRAMME_SUBTITLE}. Tracking the figures, reporting and review workstreams
+              across {totalCountries} countries.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-cyan/70">
               <Badge variant="outline" className="border-white/20 bg-white/5 text-cyan">
@@ -180,8 +182,8 @@ export function Overview() {
         <DeadlineHorizonCard label="This month" withinDays={30} />
       </div>
 
-      {/* Activity */}
-      <ActivityFeed limit={10} />
+      {/* Activity — admin only */}
+      {isAdmin && <ActivityFeed limit={10} />}
     </div>
   );
 }

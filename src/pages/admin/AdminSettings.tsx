@@ -48,7 +48,7 @@ export function AdminSettings() {
       <PageHeader
         eyebrow="Admin"
         title="Settings"
-        subtitle="Data management, theme and admin preferences."
+        subtitle="Data, appearance and notification preferences."
       />
 
       <Card>

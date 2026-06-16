@@ -111,6 +111,7 @@ export type Mutation =
       resolvedBy: string;
       act: ActivityEntry;
     }
+  | { t: 'removeComment'; countryId: string; commentId: string; act: ActivityEntry }
   | { t: 'updateSettings'; patch: Partial<AppSettings>; act: ActivityEntry }
   | { t: 'logActivity'; act: ActivityEntry }
   | { t: 'replaceState'; state: AppState };
@@ -132,6 +133,7 @@ export const MUTATION_TYPES: readonly Mutation['t'][] = [
   'replyComment',
   'acknowledgeComment',
   'resolveComment',
+  'removeComment',
   'updateSettings',
   'logActivity',
   'replaceState',
@@ -151,6 +153,17 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
         activity: m.state.activity ?? [],
         lastSyncedAt: m.state.lastSyncedAt ?? null,
         settings: m.state.settings,
+      };
+
+    case 'removeComment':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.countryId
+            ? c
+            : { ...c, messages: (c.messages ?? []).filter((msg) => msg.id !== m.commentId) },
+        ),
+        activity: withActivity(state.activity, m.act),
       };
 
     case 'updateSettings':

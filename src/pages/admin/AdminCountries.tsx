@@ -31,7 +31,7 @@ export function AdminCountries() {
       <PageHeader
         eyebrow="Admin"
         title="Countries"
-        subtitle="Add, edit or remove tracked countries."
+        subtitle="Manage the countries included in the programme."
         actions={
           <Button variant="primary" size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />

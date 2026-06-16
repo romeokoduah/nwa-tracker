@@ -48,7 +48,7 @@ export function Figures() {
       <PageHeader
         eyebrow="Workstream 1"
         title="Figures"
-        subtitle={`Eight scientific figures across ${countries.length} countries — ${countries.length * 8} work items.`}
+        subtitle="Eight standard figures prepared for each country."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

@@ -43,7 +43,7 @@ export function Team() {
       <PageHeader
         eyebrow="Programme"
         title="Team"
-        subtitle={`${team.length} people across the NWA programme.`}
+        subtitle={`${team.length} contributors to the programme.`}
       />
 
       <FilterBar>

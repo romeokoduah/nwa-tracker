@@ -72,7 +72,7 @@ export function AdminDashboard() {
       <PageHeader
         eyebrow="Admin"
         title="Action centre"
-        subtitle="Everything that needs an admin's attention, in one place."
+        subtitle="Items requiring coordinator attention."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setAddMemberOpen(true)} className="gap-1.5">

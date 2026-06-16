@@ -114,7 +114,7 @@ export function CountryDetail() {
         </div>
       </Card>
 
-      <PageHeader title="Workstreams" subtitle="Figures, report and reviewer sign-offs." />
+      <PageHeader title="Workstreams" subtitle="Figures, report and review status for this country." />
 
       <Tabs defaultValue="figures">
         <TabsList>

@@ -163,7 +163,7 @@ export function MyWork() {
 
       <PageHeader
         title="My assignments"
-        subtitle="Tick items off as you complete them — every change updates the main dashboard immediately."
+        subtitle="Update the status of your work. Changes save for the whole team instantly."
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -281,7 +281,7 @@ export function MyWork() {
       {!currentUser.isAdmin && !hasAnyWork && (
         <EmptyState
           title="No assignments yet"
-          description="Nothing has been assigned to you. Check back once an admin delegates work, or browse the public dashboard."
+          description="You have no assignments yet. They will appear here once work is assigned to you."
         />
       )}
 

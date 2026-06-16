@@ -80,7 +80,7 @@ export function AdminDeadlines() {
       <PageHeader
         eyebrow="Admin"
         title="Deadlines"
-        subtitle="A month-grid view of every deliverable's due date."
+        subtitle="Deliverable due dates, by month."
       />
 
       <div className="flex items-center justify-between">

@@ -174,6 +174,11 @@ interface NwaStore extends AppState {
     commentId: string,
     by: { id: string; name: string },
   ) => void;
+  removeComment: (
+    countryId: string,
+    commentId: string,
+    by: { id: string; name: string },
+  ) => void;
 
   // reminders (coordinator -> assignee/reviewer): shows on dashboard + emails
   sendReminder: (input: SendReminderInput) => void;
@@ -566,6 +571,21 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
         act: makeAct({
           actor: by.name,
           action: `${by.name} resolved a comment on ${c?.name ?? countryId}`,
+          entityType: 'comment',
+          entityId: `${countryId}:${commentId}`,
+        }),
+      });
+    },
+
+    removeComment: (countryId, commentId, by) => {
+      const c = get().countries.find((x) => x.id === countryId);
+      commit({
+        t: 'removeComment',
+        countryId,
+        commentId,
+        act: makeAct({
+          actor: by.name,
+          action: `${by.name} deleted a comment on ${c?.name ?? countryId}`,
           entityType: 'comment',
           entityId: `${countryId}:${commentId}`,
         }),

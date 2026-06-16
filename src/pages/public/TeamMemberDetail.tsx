@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { useNwaStore } from '@/store/useNwaStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { selectWorkloadForMember } from '@/store/selectors';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ export function TeamMemberDetail() {
   const team = useNwaStore((s) => s.team);
   const activity = useNwaStore((s) => s.activity);
   const lastSyncedAt = useNwaStore((s) => s.lastSyncedAt);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const workload = useMemo(
     () =>
       selectWorkloadForMember(
@@ -119,8 +121,8 @@ export function TeamMemberDetail() {
           <CardContent>
             {workload.figureAssignments.length === 0 ? (
               <EmptyState
-                title="No figure assignments"
-                description="Admin can assign work in /admin/assignments."
+                title="No figures assigned"
+                description="Figures assigned to this member will appear here."
                 className="border-none p-2"
               />
             ) : (
@@ -160,7 +162,7 @@ export function TeamMemberDetail() {
             {workload.reportAssignments.length === 0 ? (
               <EmptyState
                 title="No reports assigned"
-                description="Admin can assign reports in /admin/assignments."
+                description="Reports assigned to this member will appear here."
                 className="border-none p-2"
               />
             ) : (
@@ -221,7 +223,7 @@ export function TeamMemberDetail() {
         </Card>
       )}
 
-      <ActivityFeed limit={6} />
+      {isAdmin && <ActivityFeed limit={6} />}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   LogOut,
   LayoutDashboard,
   Mail,
+  MessagesSquare,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNwaStore } from '@/store/useNwaStore';
@@ -45,6 +46,7 @@ const ADMIN: NavItem[] = [
   { to: '/admin/countries', label: 'Countries', icon: Globe2 },
   { to: '/admin/team', label: 'Team', icon: Users },
   { to: '/admin/deadlines', label: 'Deadlines', icon: Calendar },
+  { to: '/admin/comments', label: 'Comments & sign-offs', icon: MessagesSquare },
   { to: '/admin/mailing', label: 'Mailing', icon: Mail },
   { to: '/admin/activity', label: 'Activity', icon: History },
   { to: '/admin/settings', label: 'Settings', icon: Settings },

@@ -5,8 +5,8 @@ export const ADMIN_USERNAME = 'admin';
 export const SHARED_PASSWORD = 'nwa2026';
 export const ADMIN_PASSWORD = SHARED_PASSWORD;
 
-export const PROGRAMME_NAME = 'NWA Tracker';
-export const PROGRAMME_SUBTITLE = 'National Water Accounting across 43 African countries';
+export const PROGRAMME_NAME = 'National Water Accounts Atlas';
+export const PROGRAMME_SUBTITLE = 'Water accounts for Sub-Saharan Africa';
 export const PROGRAMME_OWNER = 'IWMI';
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {

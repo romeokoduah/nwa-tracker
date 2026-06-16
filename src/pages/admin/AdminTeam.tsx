@@ -40,7 +40,7 @@ export function AdminTeam() {
       <PageHeader
         eyebrow="Admin"
         title="Team"
-        subtitle="Add, edit or remove team members. Removing a member reassigns their work to Unassigned."
+        subtitle="Manage team members. Removing someone returns their work to Unassigned."
         actions={
           <Button variant="primary" size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />

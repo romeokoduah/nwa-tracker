@@ -22,6 +22,7 @@ import { AdminDeadlines } from '@/pages/admin/AdminDeadlines';
 import { AdminActivity } from '@/pages/admin/AdminActivity';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { AdminMailing } from '@/pages/admin/AdminMailing';
+import { AdminComments } from '@/pages/admin/AdminComments';
 
 export function Router() {
   return (
@@ -92,6 +93,14 @@ export function Router() {
           element={
             <AdminGate>
               <AdminActivity />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="admin/comments"
+          element={
+            <AdminGate>
+              <AdminComments />
             </AdminGate>
           }
         />

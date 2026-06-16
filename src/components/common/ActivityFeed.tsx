@@ -16,7 +16,7 @@ export function ActivityFeed({ limit = 10, inCard = true }: ActivityFeedProps) {
   const inner = items.length === 0 ? (
     <EmptyState
       title="No activity yet"
-      description="Make an admin change and it will appear here."
+      description="Changes appear here as the team updates the tracker."
       icon={History}
       className="border-none p-4"
     />

@@ -23,7 +23,7 @@ export function Reviews() {
       <PageHeader
         eyebrow="Workstream 3"
         title="Reviewer sign-offs"
-        subtitle="Five reviewers × 43 countries. Each cell is one sign-off."
+        subtitle="Independent review status for each country."
       />
 
       <Card>

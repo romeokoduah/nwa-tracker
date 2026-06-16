@@ -80,7 +80,7 @@ export function Reports() {
       <PageHeader
         eyebrow="Workstream 2"
         title="National Water Accounting reports"
-        subtitle={`${countries.length} reports — one per country. Met means the country's NWA report is final.`}
+        subtitle={`${countries.length} reports, one per country. “Met” indicates a finalised report.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
