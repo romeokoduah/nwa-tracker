@@ -4,7 +4,7 @@
  * globals — imports only `./types` and the `Mutation` *type*. Bundled into the
  * Vercel `mutate` function and exercised by unit tests.
  */
-import { FIGURE_META, type AppState, type Country, type TeamMember } from './types';
+import { FIGURE_META, type AppState, type Country, type TeamMember } from './types.js';
 import type { Mutation } from './mutations';
 
 export interface EmailMessage {
