@@ -65,24 +65,61 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function link(ctx: NotifyCtx, path: string): string {
-  return `${ctx.appBaseUrl}${path}`;
+const EMAIL_SIGNATURE = 'Coordinating Team, National Water Accounts Atlas';
+
+/** Render the branded HTML + plain-text body shared by every email. Links go to the main app URL. */
+export function renderEmail(opts: {
+  heading: string;
+  lines: string[];
+  appBaseUrl: string;
+}): { text: string; html: string } {
+  const body = opts.lines.filter(Boolean);
+  const url = opts.appBaseUrl || '#';
+  const text = [opts.heading, '', ...body, '', `Open the tracker: ${url}`, '', `— ${EMAIL_SIGNATURE}`].join('\n');
+  const html = `<!doctype html><html><body style="margin:0;background:#f4f8f7;padding:24px 12px;font-family:'Segoe UI',Arial,sans-serif;color:#0f2e2a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e2e8e6;border-radius:12px;overflow:hidden;">
+<tr><td style="background:#0f3b36;padding:18px 24px;">
+<div style="color:#ffffff;font-size:16px;font-weight:700;">National Water Accounts Atlas</div>
+<div style="color:#bfe6df;font-size:12px;margin-top:2px;">Sub-Saharan Africa Tracker</div>
+</td></tr>
+<tr><td style="height:4px;background:#2eb5a3;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr><td style="padding:24px;">
+<div style="font-size:16px;font-weight:600;margin-bottom:14px;">${escapeHtml(opts.heading)}</div>
+${body.map((l) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;">${escapeHtml(l)}</p>`).join('')}
+<p style="margin:22px 0 4px;"><a href="${url}" style="display:inline-block;background:#2eb5a3;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;">Open the Tracker</a></p>
+</td></tr>
+<tr><td style="padding:16px 24px;border-top:1px solid #eef2f1;color:#5b6b68;font-size:12px;line-height:1.5;">— ${escapeHtml(EMAIL_SIGNATURE)}</td></tr>
+</table></td></tr></table>
+</body></html>`;
+  return { text, html };
 }
 
 function build(
   to: string,
   subject: string,
   lines: string[],
-  linkUrl: string,
+  ctx: NotifyCtx,
   replyTo?: string,
 ): EmailMessage {
-  const body = lines.filter(Boolean);
-  const linkText = 'Open in NWA Tracker';
-  const text = [...body, `${linkText}: ${linkUrl}`].join('\n\n');
-  const html =
-    body.map((l) => `<p>${escapeHtml(l)}</p>`).join('') +
-    `<p><a href="${linkUrl}">${linkText}</a></p>`;
+  const heading = subject.replace(/^\[NWA Tracker\]\s*/, '');
+  const { text, html } = renderEmail({ heading, lines, appBaseUrl: ctx.appBaseUrl });
   return replyTo ? { to, replyTo, subject, text, html } : { to, subject, text, html };
+}
+
+/** Compose one branded email for free-form admin messages (used by /api/send-mail). */
+export function composeEmail(opts: {
+  to: string;
+  subject: string;
+  lines: string[];
+  appBaseUrl: string;
+  replyTo?: string;
+}): EmailMessage {
+  const heading = opts.subject.replace(/^\[NWA Tracker\]\s*/, '');
+  const { text, html } = renderEmail({ heading, lines: opts.lines, appBaseUrl: opts.appBaseUrl });
+  const msg: EmailMessage = { to: opts.to, subject: opts.subject, text, html };
+  if (opts.replyTo) msg.replyTo = opts.replyTo;
+  return msg;
 }
 
 /** Emails for a section status transition (report or figure). */
@@ -95,7 +132,6 @@ function statusMessages(
   ctx: NotifyCtx,
   replyTo: string | undefined,
 ): EmailMessage[] {
-  const url = link(ctx, `/countries/${country.id}`);
   if (newStatus === 'in_review') {
     const reviewerIds = country.reviews.map((rv) => rv.reviewerId);
     return recipients(next, reviewerIds, ctx).map((r) =>
@@ -103,7 +139,7 @@ function statusMessages(
         r.email,
         `[NWA Tracker] Ready for your review: ${country.name} (${sectionLabel})`,
         [`The ${sectionLabel} for ${country.name} is ready for your review.`],
-        url,
+        ctx,
         replyTo,
       ),
     );
@@ -121,7 +157,7 @@ function statusMessages(
         to,
         `[NWA Tracker] Blocked: ${country.name} (${sectionLabel})`,
         [`The ${sectionLabel} for ${country.name} has been marked blocked.`],
-        url,
+        ctx,
         replyTo,
       ),
     );
@@ -153,7 +189,7 @@ export function computeNotifications(
               `You've been assigned the country report for ${c.name}.`,
               actor ? `Assigned by ${actor.name}.` : '',
             ],
-            link(ctx, `/countries/${c.id}`),
+            ctx,
             replyTo,
           ),
         );
@@ -184,7 +220,7 @@ export function computeNotifications(
               `You've been assigned the "${label}" figure for ${c.name}.`,
               actor ? `Assigned by ${actor.name}.` : '',
             ],
-            link(ctx, `/countries/${c.id}`),
+            ctx,
             replyTo,
           ),
         );
@@ -217,7 +253,7 @@ export function computeNotifications(
           `You've been assigned the "${label}" figure for: ${names.join(', ')}.`,
           actor ? `Assigned by ${actor.name}.` : '',
         ],
-        link(ctx, `/figures`),
+        ctx,
         replyTo,
       ),
     );
@@ -240,6 +276,22 @@ export function computeNotifications(
           ? 'report'
           : 'general discussion';
 
+    if (c.reminder) {
+      return recips.map((r) =>
+        build(
+          r.email,
+          `[NWA Tracker] Reminder — ${country.name} (${sectionLabel})`,
+          [
+            `This is a reminder from the ${c.authorName} regarding the ${sectionLabel} for ${country.name}.`,
+            `"${c.body}"`,
+            'Please log in and update your progress when you can. It will also appear on your dashboard.',
+          ],
+          ctx,
+          replyTo,
+        ),
+      );
+    }
+
     const subject = c.blocking
       ? `[NWA Tracker] Action needed: comment on ${country.name}`
       : c.fromReviewer
@@ -255,7 +307,7 @@ export function computeNotifications(
           `"${c.body}"`,
           c.blocking ? 'This comment is blocking and needs your response.' : '',
         ],
-        link(ctx, `/countries/${country.id}`),
+        ctx,
         replyTo,
       ),
     );
@@ -280,7 +332,7 @@ export function computeNotifications(
         r.email,
         `[NWA Tracker] New reply on ${country.name}`,
         [`${m.reply.authorName} replied on ${country.name}:`, `"${m.reply.body}"`],
-        link(ctx, `/countries/${country.id}`),
+        ctx,
         replyTo,
       ),
     );
@@ -296,7 +348,7 @@ export function computeNotifications(
         r.email,
         `[NWA Tracker] Review completed for ${country.name}`,
         [`${reviewerName} completed their review of ${country.name}.`],
-        link(ctx, `/countries/${country.id}`),
+        ctx,
         replyTo,
       ),
     );

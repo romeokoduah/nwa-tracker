@@ -55,7 +55,12 @@ describe('report assignment', () => {
     expect(msgs).toHaveLength(1);
     expect(msgs[0].to).toBe('isuru@cgiar.org');
     expect(msgs[0].subject).toContain('Zambia');
-    expect(msgs[0].text).toContain('https://app.test/countries/c1');
+    // links point at the main app URL (no deep links)
+    expect(msgs[0].text).toContain('https://app.test');
+    expect(msgs[0].text).not.toContain('/countries/');
+    // branded signature on every email
+    expect(msgs[0].text).toContain('Coordinating Team, National Water Accounts Atlas');
+    expect(msgs[0].html).toContain('National Water Accounts Atlas');
   });
 
   it('does not email when the assignee is unchanged', () => {
@@ -184,6 +189,30 @@ describe('directed comments', () => {
     s.countries[0].messages = [c];
     const m: Mutation = { t: 'addComment', comment: c, act: act() };
     expect(computeNotifications(s, s, m, CTX)).toHaveLength(0);
+  });
+});
+
+describe('reminders', () => {
+  it('uses reminder wording and signature for a coordinator reminder', () => {
+    const team = [member('isuru')];
+    const c = comment({
+      reminder: true,
+      authorId: 'admin',
+      authorName: 'Coordinating Team',
+      authorRole: 'Coordinator',
+      scope: 'report',
+      recipientIds: ['isuru'],
+      body: 'Please begin work on the report.',
+    });
+    const prev = state({ team, countries: [country('c1', { name: 'Mali' })] });
+    const next = state({ team, countries: [country('c1', { name: 'Mali', messages: [c] })] });
+    const m: Mutation = { t: 'addComment', comment: c, act: act() };
+    const msgs = computeNotifications(prev, next, m, CTX);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].to).toBe('isuru@cgiar.org');
+    expect(msgs[0].subject).toContain('Reminder');
+    expect(msgs[0].text.toLowerCase()).toContain('reminder');
+    expect(msgs[0].text).toContain('Coordinating Team, National Water Accounts Atlas');
   });
 });
 

@@ -44,7 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const next = applyMutation(row.data, mutation);
       const newVersion = await casState(row.version, next);
       if (newVersion !== null) {
-        if (process.env.NOTIFICATIONS_ENABLED === 'true') {
+        // env var is the deploy-level master switch; the in-app setting is the
+        // admin's day-to-day toggle (default on when unset).
+        const notificationsOn =
+          process.env.NOTIFICATIONS_ENABLED === 'true' &&
+          next.settings?.notificationsEnabled !== false;
+        if (notificationsOn) {
           try {
             const msgs = computeNotifications(row.data, next, mutation, {
               actorId,

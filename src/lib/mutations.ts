@@ -10,6 +10,7 @@
  */
 import type {
   ActivityEntry,
+  AppSettings,
   AppState,
   Comment,
   CommentReply,
@@ -110,6 +111,7 @@ export type Mutation =
       resolvedBy: string;
       act: ActivityEntry;
     }
+  | { t: 'updateSettings'; patch: Partial<AppSettings>; act: ActivityEntry }
   | { t: 'logActivity'; act: ActivityEntry }
   | { t: 'replaceState'; state: AppState };
 
@@ -130,6 +132,7 @@ export const MUTATION_TYPES: readonly Mutation['t'][] = [
   'replyComment',
   'acknowledgeComment',
   'resolveComment',
+  'updateSettings',
   'logActivity',
   'replaceState',
 ];
@@ -147,6 +150,14 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
         team: m.state.team,
         activity: m.state.activity ?? [],
         lastSyncedAt: m.state.lastSyncedAt ?? null,
+        settings: m.state.settings,
+      };
+
+    case 'updateSettings':
+      return {
+        ...state,
+        settings: { notificationsEnabled: true, ...state.settings, ...m.patch },
+        activity: withActivity(state.activity, m.act),
       };
 
     case 'addComment':
