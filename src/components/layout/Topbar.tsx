@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Moon, Sun, LogIn, LogOut, Menu, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Search, Moon, Sun, LogIn, LogOut, Menu, LayoutDashboard, ShieldCheck, FolderOpen, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SHAREPOINT_FOLDER_URL } from '@/lib/constants';
 import { Avatar } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -67,6 +68,19 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       </button>
 
       <div className="flex items-center gap-2">
+        <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <a
+            href={SHAREPOINT_FOLDER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open the shared Atlas folder in SharePoint (review & upload)"
+          >
+            <FolderOpen className="h-3.5 w-3.5 text-teal" />
+            <span className="hidden sm:inline">Atlas folder</span>
+            <ExternalLink className="hidden h-3 w-3 opacity-50 sm:inline" />
+          </a>
+        </Button>
+
         <Button
           variant="ghost"
           size="icon"

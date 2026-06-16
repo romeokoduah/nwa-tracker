@@ -9,6 +9,14 @@ export const PROGRAMME_NAME = 'National Water Accounts Atlas';
 export const PROGRAMME_SUBTITLE = 'Water accounts for Sub-Saharan Africa';
 export const PROGRAMME_OWNER = 'IWMI';
 
+/**
+ * Shared SharePoint folder (review + upload). All CGIAR accounts have access.
+ * Opens in SharePoint — document libraries cannot be reliably iframe-embedded
+ * (Microsoft blocks framing and requires each viewer's CGIAR sign-in).
+ */
+export const SHAREPOINT_FOLDER_URL =
+  'https://cgiar.sharepoint.com/:f:/r/sites/IWMIDIWASAWAinterns/Shared%20Documents/General/National%20Water%20Accounting%20Atlas?csf=1&web=1&e=tqMjls';
+
 export const STATUS_LABELS: Record<TaskStatus, string> = {
   not_started: 'Not Started',
   in_progress: 'In Progress',

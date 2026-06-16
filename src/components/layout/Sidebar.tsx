@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Mail,
   MessagesSquare,
+  FolderOpen,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNwaStore } from '@/store/useNwaStore';
@@ -34,6 +35,7 @@ const PROGRAMME: NavItem[] = [
   { to: '/', label: 'Overview', icon: Home, end: true },
   { to: '/countries', label: 'Countries', icon: Globe2 },
   { to: '/team', label: 'Team', icon: Users },
+  { to: '/documents', label: 'Atlas folder', icon: FolderOpen },
 ];
 const WORKSTREAMS: NavItem[] = [
   { to: '/figures', label: 'Figures', icon: BarChart3 },

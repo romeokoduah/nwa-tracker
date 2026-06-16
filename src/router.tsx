@@ -11,6 +11,7 @@ import { Reports } from '@/pages/public/Reports';
 import { Reviews } from '@/pages/public/Reviews';
 import { Team } from '@/pages/public/Team';
 import { TeamMemberDetail } from '@/pages/public/TeamMemberDetail';
+import { Documents } from '@/pages/public/Documents';
 
 import { Login } from '@/pages/Login';
 import { MyWork } from '@/pages/MyWork';
@@ -38,6 +39,7 @@ export function Router() {
         <Route path="reviews" element={<Reviews />} />
         <Route path="team" element={<Team />} />
         <Route path="team/:id" element={<TeamMemberDetail />} />
+        <Route path="documents" element={<Documents />} />
 
         <Route
           path="me"
