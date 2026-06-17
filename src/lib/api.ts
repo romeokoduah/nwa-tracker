@@ -77,14 +77,33 @@ export interface SendMailResult {
   disabled?: boolean;
 }
 
+/** An uploaded image referenced by an outgoing email. */
+export interface MailImage {
+  /** Public Vercel Blob URL the server fetches the bytes from. */
+  url: string;
+  filename: string;
+  contentType: string;
+  /** 'inline' embeds it in the body; 'attachment' adds it as a file. */
+  disposition: 'inline' | 'attachment';
+}
+
 export function postSendMail(input: {
   recipientIds: string[];
   subject: string;
   body: string;
   actorId: string | null;
+  images?: MailImage[];
 }): Promise<SendMailResult> {
   return request<SendMailResult>('/api/send-mail', {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+/** Best-effort delete of an uploaded blob (when the user removes an image before sending). */
+export function deleteBlob(url: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/blob-delete', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
   });
 }

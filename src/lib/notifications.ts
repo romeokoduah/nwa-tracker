@@ -7,12 +7,27 @@
 import { FIGURE_META, type AppState, type Country, type TeamMember } from './types.js';
 import type { Mutation } from './mutations';
 
+/**
+ * A nodemailer-compatible attachment. `content` is the raw bytes (set
+ * server-side after fetching an uploaded image); `cid` + inline disposition make
+ * an image render in the HTML body via `<img src="cid:...">`.
+ */
+export interface EmailAttachment {
+  filename: string;
+  content?: Uint8Array | string;
+  path?: string;
+  contentType?: string;
+  cid?: string;
+  contentDisposition?: 'inline' | 'attachment';
+}
+
 export interface EmailMessage {
   to: string;
   replyTo?: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface NotifyCtx {
@@ -72,10 +87,28 @@ export function renderEmail(opts: {
   heading: string;
   lines: string[];
   appBaseUrl: string;
+  /** Inline images to embed in the body, referenced by `cid:`. */
+  inlineImages?: { cid: string; filename: string }[];
 }): { text: string; html: string } {
   const body = opts.lines.filter(Boolean);
   const url = opts.appBaseUrl || '#';
-  const text = [opts.heading, '', ...body, '', `Open the tracker: ${url}`, '', `— ${EMAIL_SIGNATURE}`].join('\n');
+  const inline = opts.inlineImages ?? [];
+  const text = [
+    opts.heading,
+    '',
+    ...body,
+    ...(inline.length ? ['', ...inline.map((i) => `[Image: ${i.filename}]`)] : []),
+    '',
+    `Open the tracker: ${url}`,
+    '',
+    `— ${EMAIL_SIGNATURE}`,
+  ].join('\n');
+  const inlineHtml = inline
+    .map(
+      (i) =>
+        `<p style="margin:0 0 12px;"><img src="cid:${i.cid}" alt="${escapeHtml(i.filename)}" style="max-width:100%;height:auto;border-radius:8px;border:1px solid #eef2f1;" /></p>`,
+    )
+    .join('');
   const html = `<!doctype html><html><body style="margin:0;background:#f4f8f7;padding:24px 12px;font-family:'Segoe UI',Arial,sans-serif;color:#0f2e2a;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e2e8e6;border-radius:12px;overflow:hidden;">
@@ -87,6 +120,7 @@ export function renderEmail(opts: {
 <tr><td style="padding:24px;">
 <div style="font-size:16px;font-weight:600;margin-bottom:14px;">${escapeHtml(opts.heading)}</div>
 ${body.map((l) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;">${escapeHtml(l)}</p>`).join('')}
+${inlineHtml}
 <p style="margin:22px 0 4px;"><a href="${url}" style="display:inline-block;background:#2eb5a3;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;">Open the Tracker</a></p>
 </td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #eef2f1;color:#5b6b68;font-size:12px;line-height:1.5;">— ${escapeHtml(EMAIL_SIGNATURE)}</td></tr>
@@ -114,11 +148,22 @@ export function composeEmail(opts: {
   lines: string[];
   appBaseUrl: string;
   replyTo?: string;
+  /** Image attachments (inline ones also carry a `cid` + 'inline' disposition). */
+  attachments?: EmailAttachment[];
 }): EmailMessage {
   const heading = opts.subject.replace(/^\[NWA Tracker\]\s*/, '');
-  const { text, html } = renderEmail({ heading, lines: opts.lines, appBaseUrl: opts.appBaseUrl });
+  const inlineImages = (opts.attachments ?? [])
+    .filter((a) => a.contentDisposition === 'inline' && a.cid)
+    .map((a) => ({ cid: a.cid as string, filename: a.filename }));
+  const { text, html } = renderEmail({
+    heading,
+    lines: opts.lines,
+    appBaseUrl: opts.appBaseUrl,
+    inlineImages,
+  });
   const msg: EmailMessage = { to: opts.to, subject: opts.subject, text, html };
   if (opts.replyTo) msg.replyTo = opts.replyTo;
+  if (opts.attachments && opts.attachments.length) msg.attachments = opts.attachments;
   return msg;
 }
 

@@ -32,6 +32,9 @@ export async function sendEmails(messages: EmailMessage[]): Promise<void> {
         subject: m.subject,
         text: m.text,
         html: m.html,
+        ...(m.attachments && m.attachments.length
+          ? { attachments: m.attachments }
+          : {}),
       });
     } catch (err) {
       // eslint-disable-next-line no-console

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Send, AlarmClock, Mail } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { Send, AlarmClock, Mail, ImagePlus, X, Loader2 } from 'lucide-react';
+import { upload } from '@vercel/blob/client';
 import { useNwaStore, type CommentAuthor } from '@/store/useNwaStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -10,7 +11,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/toast';
-import { postSendMail } from '@/lib/api';
+import { postSendMail, deleteBlob, type MailImage } from '@/lib/api';
+import { cn } from '@/lib/cn';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per image
+const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+interface ImageDraft {
+  id: string;
+  name: string;
+  previewUrl: string;
+  status: 'uploading' | 'ready' | 'error';
+  url?: string;
+  contentType: string;
+  disposition: 'inline' | 'attachment';
+  error?: string;
+}
 
 interface Laggard {
   countryId: string;
@@ -50,6 +66,81 @@ export function AdminMailing() {
   const [subject, setSubject] = useState('');
   const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [images, setImages] = useState<ImageDraft[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadingCount = images.filter((i) => i.status === 'uploading').length;
+
+  async function onFilesPicked(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const picked = Array.from(files);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    for (const file of picked) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast({ title: `${file.name}: not a supported image`, variant: 'error' });
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast({ title: `${file.name} is over 5 MB`, variant: 'error' });
+        continue;
+      }
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const previewUrl = URL.createObjectURL(file);
+      setImages((prev) => [
+        ...prev,
+        {
+          id,
+          name: file.name,
+          previewUrl,
+          status: 'uploading',
+          contentType: file.type,
+          disposition: 'inline',
+        },
+      ]);
+      try {
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/blob-upload',
+          contentType: file.type,
+        });
+        setImages((prev) =>
+          prev.map((im) =>
+            im.id === id ? { ...im, status: 'ready', url: blob.url } : im,
+          ),
+        );
+      } catch (e) {
+        setImages((prev) =>
+          prev.map((im) =>
+            im.id === id
+              ? { ...im, status: 'error', error: e instanceof Error ? e.message : 'Upload failed' }
+              : im,
+          ),
+        );
+        toast({
+          title: `Couldn't upload ${file.name}`,
+          description: e instanceof Error ? e.message : 'Upload failed',
+          variant: 'error',
+        });
+      }
+    }
+  }
+
+  function removeImage(id: string) {
+    setImages((prev) => {
+      const target = prev.find((im) => im.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+        if (target.url) void deleteBlob(target.url).catch(() => {});
+      }
+      return prev.filter((im) => im.id !== id);
+    });
+  }
+
+  function setDisposition(id: string, disposition: 'inline' | 'attachment') {
+    setImages((prev) =>
+      prev.map((im) => (im.id === id ? { ...im, disposition } : im)),
+    );
+  }
 
   const reportLaggards = useMemo<Laggard[]>(
     () =>
@@ -103,6 +194,18 @@ export function AdminMailing() {
       toast({ title: 'Add recipients, a subject and a message.', variant: 'error' });
       return;
     }
+    if (uploadingCount > 0) {
+      toast({ title: 'Wait for images to finish uploading.', variant: 'info' });
+      return;
+    }
+    const mailImages: MailImage[] = images
+      .filter((im) => im.status === 'ready' && im.url)
+      .map((im) => ({
+        url: im.url as string,
+        filename: im.name,
+        contentType: im.contentType,
+        disposition: im.disposition,
+      }));
     setSending(true);
     try {
       const res = await postSendMail({
@@ -110,6 +213,7 @@ export function AdminMailing() {
         subject: subject.trim(),
         body: bodyText.trim(),
         actorId,
+        ...(mailImages.length ? { images: mailImages } : {}),
       });
       if (res.disabled) {
         toast({
@@ -125,6 +229,9 @@ export function AdminMailing() {
         setSubject('');
         setBodyText('');
         setSelected(new Set());
+        // Server deletes the blobs after sending; just clear local previews.
+        images.forEach((im) => URL.revokeObjectURL(im.previewUrl));
+        setImages([]);
       }
     } catch (e) {
       toast({
@@ -241,13 +348,109 @@ export function AdminMailing() {
             value={bodyText}
             onChange={(e) => setBodyText(e.target.value)}
           />
+
+          {/* Images */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Images {images.length > 0 && `(${images.length})`}
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES.join(',')}
+                multiple
+                className="hidden"
+                onChange={(e) => void onFilesPicked(e.target.files)}
+              />
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-xs font-medium text-teal hover:underline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImagePlus className="h-3.5 w-3.5" />
+                Add images
+              </button>
+            </div>
+            {images.length === 0 ? (
+              <p className="text-xs text-slate-400">
+                Attach PNG/JPG/GIF/WebP up to 5 MB each. Choose “Inline” to show an image in the
+                message body, or “Attach” to send it as a file.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {images.map((im) => (
+                  <div
+                    key={im.id}
+                    className="relative flex flex-col gap-2 rounded-xl border border-slate-200 p-2 dark:border-white/5"
+                  >
+                    <div className="relative overflow-hidden rounded-lg bg-slate-100 dark:bg-white/5">
+                      <img
+                        src={im.previewUrl}
+                        alt={im.name}
+                        className="h-24 w-full object-cover"
+                      />
+                      {im.status === 'uploading' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <Loader2 className="h-5 w-5 animate-spin text-white" />
+                        </div>
+                      )}
+                      {im.status === 'error' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-danger/70 px-2 text-center text-[10px] font-medium text-white">
+                          {im.error ?? 'Upload failed'}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${im.name}`}
+                        className="absolute right-1 top-1 rounded-full bg-black/55 p-1 text-white hover:bg-black/75"
+                        onClick={() => removeImage(im.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="truncate text-[11px] text-slate-500" title={im.name}>
+                      {im.name}
+                    </div>
+                    <div className="grid grid-cols-2 overflow-hidden rounded-md border border-slate-200 text-[11px] dark:border-white/10">
+                      {(['inline', 'attachment'] as const).map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          disabled={im.status !== 'ready'}
+                          className={cn(
+                            'py-1 font-medium transition-colors disabled:opacity-50',
+                            im.disposition === d
+                              ? 'bg-teal text-white'
+                              : 'bg-white text-slate-500 hover:bg-slate-50 dark:bg-deep dark:text-slate-300 dark:hover:bg-white/5',
+                          )}
+                          onClick={() => setDisposition(im.id, d)}
+                        >
+                          {d === 'inline' ? 'Inline' : 'Attach'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400">
               Signed “Coordinating Team, National Water Accounts Atlas”.
             </span>
-            <Button className="gap-2" onClick={handleSend} disabled={sending}>
+            <Button
+              className="gap-2"
+              onClick={handleSend}
+              disabled={sending || uploadingCount > 0}
+            >
               <Send className="h-4 w-4" />
-              {sending ? 'Sending…' : 'Send message'}
+              {sending
+                ? 'Sending…'
+                : uploadingCount > 0
+                  ? 'Uploading…'
+                  : 'Send message'}
             </Button>
           </div>
         </CardContent>

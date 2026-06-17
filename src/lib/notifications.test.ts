@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { AppState, Country, TeamMember, Comment, CommentReply } from './types';
 import { FIGURE_TYPES } from './types';
 import type { Mutation } from './mutations';
-import { computeNotifications, type NotifyCtx } from './notifications';
+import { computeNotifications, composeEmail, type NotifyCtx } from './notifications';
 
 // ---- fixtures (extended by later tasks) ----
 function member(id: string, over: Partial<TeamMember> = {}): TeamMember {
@@ -293,5 +293,54 @@ describe('reviews and status changes', () => {
     const msgs = computeNotifications(prev, next, m, CTX); // actor = admin (not the assignee)
     const tos = msgs.map((x) => x.to).sort();
     expect(tos).toEqual(['admin@cgiar.org', 'afua@cgiar.org']);
+  });
+});
+
+describe('composeEmail with images', () => {
+  const base = {
+    to: 'afua@cgiar.org',
+    subject: '[NWA Tracker] Update',
+    lines: ['Hello team.'],
+    appBaseUrl: 'https://nwa.example',
+  };
+
+  it('embeds an inline image via cid in the html body', () => {
+    const msg = composeEmail({
+      ...base,
+      attachments: [
+        {
+          filename: 'chart.png',
+          content: new Uint8Array([1, 2, 3]),
+          contentType: 'image/png',
+          contentDisposition: 'inline',
+          cid: 'img0@nwa-tracker',
+        },
+      ],
+    });
+    expect(msg.html).toContain('cid:img0@nwa-tracker');
+    expect(msg.attachments).toHaveLength(1);
+    expect(msg.text).toContain('[Image: chart.png]');
+  });
+
+  it('carries an attachment without injecting an inline img tag', () => {
+    const msg = composeEmail({
+      ...base,
+      attachments: [
+        {
+          filename: 'report.png',
+          content: new Uint8Array([9]),
+          contentType: 'image/png',
+          contentDisposition: 'attachment',
+        },
+      ],
+    });
+    expect(msg.html).not.toContain('cid:');
+    expect(msg.attachments).toHaveLength(1);
+  });
+
+  it('omits attachments when none are given', () => {
+    const msg = composeEmail(base);
+    expect(msg.attachments).toBeUndefined();
+    expect(msg.html).not.toContain('cid:');
   });
 });
