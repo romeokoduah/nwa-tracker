@@ -4,6 +4,8 @@ import { useNwaStore } from '@/store/useNwaStore';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate } from '@/lib/format';
+import { reviewStatusOf } from '@/lib/derive';
+import { REVIEW_STATUS_COLORS, REVIEW_STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 
 interface ReviewerHeatmapProps {
@@ -61,19 +63,26 @@ export function ReviewerHeatmap({ className }: ReviewerHeatmapProps) {
                 </td>
                 {sortedCountries.map((c) => {
                   const review = c.reviews.find((r) => r.reviewerId === rv.id);
-                  const done = !!review?.done;
+                  const status = review ? reviewStatusOf(review) : 'not_started';
+                  const active = status !== 'not_started';
+                  const label = REVIEW_STATUS_LABELS[status];
                   return (
                     <td
                       key={`${rv.id}-${c.id}`}
+                      style={
+                        active
+                          ? { background: REVIEW_STATUS_COLORS[status] }
+                          : undefined
+                      }
                       className={cn(
                         'h-5 w-5 cursor-pointer rounded-sm transition-transform hover:scale-110',
-                        done
-                          ? 'bg-success ring-1 ring-inset ring-success/30'
+                        active
+                          ? 'ring-1 ring-inset ring-black/10'
                           : 'border border-dashed border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-white/5',
                       )}
                       onMouseEnter={(e) =>
                         setHover({
-                          text: `${rv.name} — ${c.name}: ${done ? 'Done' : 'Pending'}${
+                          text: `${rv.name} — ${c.name}: ${label}${
                             review?.completedAt ? ` (${formatDate(review.completedAt)})` : ''
                           }`,
                           x: e.clientX,
@@ -89,7 +98,7 @@ export function ReviewerHeatmap({ className }: ReviewerHeatmapProps) {
                       onClick={() => navigate(`/countries/${c.id}`)}
                     >
                       <span className="sr-only">
-                        {rv.name} {c.name} {done ? 'done' : 'pending'}
+                        {rv.name} {c.name} {label}
                       </span>
                     </td>
                   );

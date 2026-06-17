@@ -56,11 +56,17 @@ export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
   met: 'Met',
 };
 
+/**
+ * Reviewer-status colors. Deliberately distinct from every other map palette
+ * (completion buckets, regions, task/report status) so a reviewer-status
+ * override always reads as a different color from completion. Uses the
+ * indigo→purple→pink band, which none of the completion colors occupy.
+ */
 export const REVIEW_STATUS_COLORS: Record<ReviewStatus, string> = {
   not_started: '#94A3B8',
-  in_progress: '#3B82F6',
-  reviewed_with_comments: '#A855F7',
-  met: '#10B981',
+  in_progress: '#4F46E5', // indigo-600
+  reviewed_with_comments: '#A855F7', // purple-500
+  met: '#DB2777', // pink-600
 };
 
 export const REGION_COLORS: Record<Region, string> = {

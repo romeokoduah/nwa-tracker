@@ -4,7 +4,15 @@ import { createPortal } from 'react-dom';
 import { useNwaStore } from '@/store/useNwaStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { FIGURE_TYPES, FIGURE_META, type Country } from '@/lib/types';
-import { STATUS_COLORS, REPORT_STATUS_COLORS, STATUS_LABELS, REPORT_STATUS_LABELS } from '@/lib/constants';
+import {
+  STATUS_COLORS,
+  REPORT_STATUS_COLORS,
+  STATUS_LABELS,
+  REPORT_STATUS_LABELS,
+  REVIEW_STATUS_COLORS,
+  REVIEW_STATUS_LABELS,
+} from '@/lib/constants';
+import { reviewStatusOf } from '@/lib/derive';
 import { cn } from '@/lib/cn';
 
 interface HeatRow {
@@ -162,11 +170,11 @@ export function WorkstreamHeatmaps() {
             countries={sorted}
             getCell={(rowId, c) => {
               const r = c.reviews.find((x) => x.reviewerId === rowId);
-              const done = !!r?.done;
+              const status = r ? reviewStatusOf(r) : 'not_started';
               return {
-                color: done ? '#10B981' : '#CBD5E1',
-                filled: done,
-                title: `${r?.reviewerName ?? rowId} — ${c.name}: ${done ? 'Done' : 'Pending'}`,
+                color: REVIEW_STATUS_COLORS[status],
+                filled: status !== 'not_started',
+                title: `${r?.reviewerName ?? rowId} — ${c.name}: ${REVIEW_STATUS_LABELS[status]}`,
               };
             }}
           />
