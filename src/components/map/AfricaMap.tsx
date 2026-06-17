@@ -6,9 +6,9 @@ import { useNwaStore } from '@/store/useNwaStore';
 import {
   overallCompletion,
   countryCompletionBucket,
-  hasReviewerFeedback,
+  countryReviewStatus,
 } from '@/lib/derive';
-import { FEEDBACK_COLOR } from '@/lib/constants';
+import { REVIEW_STATUS_COLORS } from '@/lib/constants';
 import type { Country } from '@/lib/types';
 import { COMPLETION_BUCKETS } from '@/lib/types';
 import { MapTooltip } from './MapTooltip';
@@ -120,9 +120,13 @@ export function AfricaMap({ height = 480 }: AfricaMapProps) {
                 let fill = '#F1F5F9';
                 let stroke = '#CBD5E1';
                 if (isInScope && country) {
-                  fill = hasReviewerFeedback(country)
-                    ? FEEDBACK_COLOR
-                    : bucketFill(countryCompletionBucket(country));
+                  // Reviewer status overrides completion color once at least one
+                  // reviewer has moved past "not started" (least-advanced wins).
+                  const reviewStatus = countryReviewStatus(country);
+                  fill =
+                    reviewStatus && reviewStatus !== 'not_started'
+                      ? REVIEW_STATUS_COLORS[reviewStatus]
+                      : bucketFill(countryCompletionBucket(country));
                   stroke = 'rgba(255,255,255,0.6)';
                 } else if (isNorth) {
                   fill = '#E2E8F0';

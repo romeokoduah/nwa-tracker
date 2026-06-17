@@ -60,6 +60,21 @@ export type TaskStatus = 'not_started' | 'in_progress' | 'in_review' | 'done' | 
 
 export type ReportStatus = 'not_started' | 'in_progress' | 'in_review' | 'met' | 'not_met';
 
+/** A reviewer's sign-off state for a country. */
+export type ReviewStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'reviewed_with_comments'
+  | 'met';
+
+/** Ordered least-advanced → most-advanced (drives the map "least-advanced wins"). */
+export const REVIEW_STATUSES: ReviewStatus[] = [
+  'not_started',
+  'in_progress',
+  'reviewed_with_comments',
+  'met',
+];
+
 export type Region = 'West' | 'East' | 'Central' | 'Southern';
 
 export interface FigureProgress {
@@ -74,6 +89,11 @@ export interface FigureProgress {
 export interface ReviewProgress {
   reviewerId: ID;
   reviewerName: string;
+  status: ReviewStatus;
+  /**
+   * Derived mirror of `status` (true when met or reviewed-with-comments) kept in
+   * sync by the reducer so existing "is this review complete?" readers keep working.
+   */
   done: boolean;
   completedAt: string | null;
   comments: string | null;

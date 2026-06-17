@@ -9,13 +9,14 @@ import type {
   FigureProgress,
   FigureType,
   ReportProgress,
+  ReviewStatus,
   Role,
   TeamMember,
 } from '@/lib/types';
 import { FIGURE_META } from '@/lib/types';
 import { seedData } from '@/lib/seed';
 import { deriveRecipients } from '@/lib/derive';
-import { applyMutation, type Mutation } from '@/lib/mutations';
+import { applyMutation, normalizeCountry, type Mutation } from '@/lib/mutations';
 
 export interface CommentAuthor {
   id: string;
@@ -137,6 +138,11 @@ interface NwaStore extends AppState {
   ) => void;
   updateReport: (countryId: string, patch: Partial<ReportProgress>) => void;
   toggleReview: (countryId: string, reviewerId: string, done: boolean) => void;
+  setReviewStatus: (
+    countryId: string,
+    reviewerId: string,
+    status: ReviewStatus,
+  ) => void;
   setReviewComment: (countryId: string, reviewerId: string, comment: string) => void;
   setCountryComment: (countryId: string, comment: string) => void;
 
@@ -301,6 +307,31 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
       });
     },
 
+    setReviewStatus: (countryId, reviewerId, status) => {
+      const s = get();
+      const country = s.countries.find((c) => c.id === countryId);
+      const reviewer = country?.reviews.find((r) => r.reviewerId === reviewerId);
+      const labels: Record<ReviewStatus, string> = {
+        not_started: 'Not started',
+        in_progress: 'In progress',
+        reviewed_with_comments: 'Reviewed with comments',
+        met: 'Met',
+      };
+      const action = `Set ${reviewer?.reviewerName ?? reviewerId}'s review of ${country?.name ?? countryId} → ${labels[status]}`;
+      commit({
+        t: 'setReviewStatus',
+        countryId,
+        reviewerId,
+        status,
+        nowISO: nowISO(),
+        act: makeAct({
+          action,
+          entityType: 'review',
+          entityId: `${countryId}:${reviewerId}`,
+        }),
+      });
+    },
+
     setReviewComment: (countryId, reviewerId, comment) =>
       commit({
         t: 'setReviewComment',
@@ -432,10 +463,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
     importJson: (json) => {
       const parsed = JSON.parse(json) as AppState;
       const next: AppState = {
-        countries: parsed.countries.map((c) => ({
-          ...c,
-          messages: c.messages ?? [],
-        })),
+        countries: parsed.countries.map(normalizeCountry),
         team: parsed.team,
         activity: parsed.activity ?? [],
         lastSyncedAt: parsed.lastSyncedAt ?? nowISO(),
@@ -656,10 +684,7 @@ export const useNwaStore = create<NwaStore>()((set, get) => {
 
     _applyRemote: (data, version) =>
       set(() => ({
-        countries: data.countries.map((c) => ({
-          ...c,
-          messages: c.messages ?? [],
-        })),
+        countries: data.countries.map(normalizeCountry),
         team: data.team,
         activity: data.activity ?? [],
         lastSyncedAt: data.lastSyncedAt ?? null,

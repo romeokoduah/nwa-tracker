@@ -1,4 +1,4 @@
-import type { TaskStatus, ReportStatus, Region } from './types';
+import type { TaskStatus, ReportStatus, ReviewStatus, Region } from './types';
 
 export const ADMIN_USERNAME = 'admin';
 // One shared password for every account (admin and all team members), per spec.
@@ -47,6 +47,20 @@ export const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
   in_review: '#2EB5A3',
   met: '#10B981',
   not_met: '#EF4444',
+};
+
+export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  reviewed_with_comments: 'Reviewed with comments',
+  met: 'Met',
+};
+
+export const REVIEW_STATUS_COLORS: Record<ReviewStatus, string> = {
+  not_started: '#94A3B8',
+  in_progress: '#3B82F6',
+  reviewed_with_comments: '#A855F7',
+  met: '#10B981',
 };
 
 export const REGION_COLORS: Record<Region, string> = {

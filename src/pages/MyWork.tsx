@@ -19,7 +19,22 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/common/EmptyState';
 import { TaskStatusBadge, ReportStatusBadge } from '@/components/common/StatusBadge';
-import { FIGURE_META, type FigureType, type TaskStatus, type ReportStatus } from '@/lib/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
+import {
+  FIGURE_META,
+  REVIEW_STATUSES,
+  type FigureType,
+  type TaskStatus,
+  type ReportStatus,
+  type ReviewStatus,
+} from '@/lib/types';
+import { reviewStatusOf, canReviewerSignOff } from '@/lib/derive';
+import { REVIEW_STATUS_COLORS, REVIEW_STATUS_LABELS } from '@/lib/constants';
 import { formatDate, formatRelative } from '@/lib/format';
 import { useToast } from '@/components/ui/toast';
 
@@ -29,7 +44,7 @@ export function MyWork() {
   const team = useNwaStore((s) => s.team);
   const updateFigure = useNwaStore((s) => s.updateFigure);
   const updateReport = useNwaStore((s) => s.updateReport);
-  const toggleReview = useNwaStore((s) => s.toggleReview);
+  const setReviewStatus = useNwaStore((s) => s.setReviewStatus);
   const { toast } = useToast();
 
   const member = useMemo(
@@ -65,11 +80,25 @@ export function MyWork() {
   const myReviews = useMemo(() => {
     if (!currentUser) return [];
     const name = currentUser.name.toLowerCase();
-    const out: { countryId: string; countryName: string; reviewerId: string; done: boolean }[] = [];
+    const out: {
+      countryId: string;
+      countryName: string;
+      reviewerId: string;
+      status: ReviewStatus;
+      done: boolean;
+      metGated: boolean;
+    }[] = [];
     for (const c of countries) {
       const r = c.reviews.find((rv) => rv.reviewerName.toLowerCase() === name);
       if (r) {
-        out.push({ countryId: c.id, countryName: c.name, reviewerId: r.reviewerId, done: r.done });
+        out.push({
+          countryId: c.id,
+          countryName: c.name,
+          reviewerId: r.reviewerId,
+          status: reviewStatusOf(r),
+          done: r.done,
+          metGated: !canReviewerSignOff(c, currentUser.id),
+        });
       }
     }
     return out;
@@ -399,25 +428,54 @@ export function MyWork() {
           <CardContent>
             <div className="grid gap-1.5 sm:grid-cols-2">
               {myReviews.map((r) => (
-                <label
+                <div
                   key={r.countryId}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 transition-colors hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
+                  className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 dark:border-white/5"
                 >
-                  <Checkbox
-                    checked={r.done}
-                    onCheckedChange={(c) => {
-                      toggleReview(r.countryId, r.reviewerId, !!c);
-                      toast({
-                        title: `${r.countryName} review ${c ? 'signed off' : 'reopened'}`,
-                        variant: c ? 'success' : 'info',
-                      });
-                    }}
-                  />
                   <span className="flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
                     {r.countryName}
                   </span>
-                  {r.done && <Badge variant="success">Done</Badge>}
-                </label>
+                  <Select
+                    value={r.status}
+                    onValueChange={(v) => {
+                      const ns = v as ReviewStatus;
+                      setReviewStatus(r.countryId, r.reviewerId, ns);
+                      toast({
+                        title: `${r.countryName} review → ${REVIEW_STATUS_LABELS[ns]}`,
+                        variant: ns === 'met' ? 'success' : 'info',
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[190px]">
+                      <span className="flex items-center gap-2 truncate">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: REVIEW_STATUS_COLORS[r.status] }}
+                        />
+                        <span className="truncate">
+                          {REVIEW_STATUS_LABELS[r.status]}
+                        </span>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REVIEW_STATUSES.map((s) => (
+                        <SelectItem
+                          key={s}
+                          value={s}
+                          disabled={s === 'met' && r.metGated}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ background: REVIEW_STATUS_COLORS[s] }}
+                            />
+                            {REVIEW_STATUS_LABELS[s]}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               ))}
             </div>
           </CardContent>

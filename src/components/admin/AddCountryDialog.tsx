@@ -68,6 +68,7 @@ export function AddCountryDialog({ open, onOpenChange }: AddCountryDialogProps) 
       reviews: REVIEWERS.map((name) => ({
         reviewerId: slugifyPerson(name),
         reviewerName: name,
+        status: 'not_started' as const,
         done: false,
         completedAt: null,
         comments: null,

@@ -354,5 +354,23 @@ export function computeNotifications(
     );
   }
 
+  if (m.t === 'setReviewStatus') {
+    // Only notify when the reviewer finishes (met or reviewed-with-comments).
+    if (m.status !== 'met' && m.status !== 'reviewed_with_comments') return [];
+    const country = countryById(next, m.countryId);
+    if (!country) return [];
+    const reviewerName = country.reviews.find((rv) => rv.reviewerId === m.reviewerId)?.reviewerName ?? 'A reviewer';
+    const withComments = m.status === 'reviewed_with_comments';
+    const subject = withComments
+      ? `[NWA Tracker] Review completed with comments for ${country.name}`
+      : `[NWA Tracker] Review completed for ${country.name}`;
+    const line = withComments
+      ? `${reviewerName} reviewed ${country.name} and left comments to address.`
+      : `${reviewerName} completed their review of ${country.name}.`;
+    return recipients(next, [country.report.assignedTo], ctx).map((r) =>
+      build(r.email, subject, [line], ctx, replyTo),
+    );
+  }
+
   return [];
 }

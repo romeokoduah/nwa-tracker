@@ -18,6 +18,8 @@ import type {
   FigureProgress,
   FigureType,
   ReportProgress,
+  ReviewProgress,
+  ReviewStatus,
   TeamMember,
 } from './types';
 
@@ -35,8 +37,21 @@ function normalizeComment(c: Comment): Comment {
   };
 }
 
-function normalizeCountryMessages(c: Country): Country {
-  return { ...c, messages: (c.messages ?? []).map(normalizeComment) };
+/** Back-fill `status` on reviews written before reviewer statuses existed, and
+ *  keep the `done` mirror consistent with `status`. */
+function normalizeReview(r: ReviewProgress): ReviewProgress {
+  const status: ReviewStatus = r.status ?? (r.done ? 'met' : 'not_started');
+  const done = status === 'met' || status === 'reviewed_with_comments';
+  return { ...r, status, done };
+}
+
+/** Back-fill all derived/added fields on a country loaded from storage. */
+export function normalizeCountry(c: Country): Country {
+  return {
+    ...c,
+    messages: (c.messages ?? []).map(normalizeComment),
+    reviews: (c.reviews ?? []).map(normalizeReview),
+  };
 }
 
 export const ACTIVITY_LIMIT = 500;
@@ -63,6 +78,14 @@ export type Mutation =
       countryId: string;
       reviewerId: string;
       done: boolean;
+      nowISO: string;
+      act: ActivityEntry;
+    }
+  | {
+      t: 'setReviewStatus';
+      countryId: string;
+      reviewerId: string;
+      status: ReviewStatus;
       nowISO: string;
       act: ActivityEntry;
     }
@@ -121,6 +144,7 @@ export const MUTATION_TYPES: readonly Mutation['t'][] = [
   'updateFigure',
   'updateReport',
   'toggleReview',
+  'setReviewStatus',
   'setReviewComment',
   'setCountryComment',
   'addMember',
@@ -148,7 +172,7 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
   switch (m.t) {
     case 'replaceState':
       return {
-        countries: m.state.countries.map(normalizeCountryMessages),
+        countries: m.state.countries.map(normalizeCountry),
         team: m.state.team,
         activity: m.state.activity ?? [],
         lastSyncedAt: m.state.lastSyncedAt ?? null,
@@ -334,8 +358,37 @@ export function applyMutation(state: AppState, m: Mutation): AppState {
                 reviews: c.reviews.map((r) =>
                   r.reviewerId !== m.reviewerId
                     ? r
-                    : { ...r, done: m.done, completedAt: m.done ? m.nowISO : null },
+                    : {
+                        ...r,
+                        status: m.done ? 'met' : 'not_started',
+                        done: m.done,
+                        completedAt: m.done ? m.nowISO : null,
+                      },
                 ),
+              },
+        ),
+        activity: withActivity(state.activity, m.act),
+      };
+
+    case 'setReviewStatus':
+      return {
+        ...state,
+        countries: state.countries.map((c) =>
+          c.id !== m.countryId
+            ? c
+            : {
+                ...c,
+                reviews: c.reviews.map((r) => {
+                  if (r.reviewerId !== m.reviewerId) return r;
+                  const done =
+                    m.status === 'met' || m.status === 'reviewed_with_comments';
+                  return {
+                    ...r,
+                    status: m.status,
+                    done,
+                    completedAt: done ? (r.completedAt ?? m.nowISO) : null,
+                  };
+                }),
               },
         ),
         activity: withActivity(state.activity, m.act),

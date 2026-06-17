@@ -15,6 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import {
   TaskStatusBadge,
@@ -31,9 +37,15 @@ import {
   overallCompletion,
   hasReviewerFeedback,
   canReviewerSignOff,
+  reviewStatusOf,
 } from '@/lib/derive';
+import {
+  REVIEW_STATUS_COLORS,
+  REVIEW_STATUS_LABELS,
+} from '@/lib/constants';
 import { formatDate, formatRelative } from '@/lib/format';
-import { FIGURE_TYPES, FIGURE_META } from '@/lib/types';
+import { FIGURE_TYPES, FIGURE_META, REVIEW_STATUSES } from '@/lib/types';
+import type { ReviewStatus } from '@/lib/types';
 import { FigureCellEditor } from '@/components/admin/FigureCellEditor';
 import { Discussion } from '@/components/country/Discussion';
 import type { FigureType } from '@/lib/types';
@@ -47,6 +59,7 @@ export function CountryDetail() {
   const updateReport = useNwaStore((s) => s.updateReport);
   const updateFigure = useNwaStore((s) => s.updateFigure);
   const toggleReview = useNwaStore((s) => s.toggleReview);
+  const setReviewStatus = useNwaStore((s) => s.setReviewStatus);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const currentUser = useAuthStore((s) => s.currentUser);
   const { toast } = useToast();
@@ -360,54 +373,77 @@ export function CountryDetail() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant={r.done ? 'success' : 'muted'}>
-                          {r.done ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <Circle className="h-3 w-3" />
-                          )}
-                          {r.done ? 'Done' : 'Pending'}
-                        </Badge>
                         {(() => {
+                          const st = reviewStatusOf(r);
                           const isMine =
                             !!currentUser &&
                             r.reviewerName.toLowerCase() ===
                               currentUser.name.toLowerCase();
-                          if (!isAdmin && !isMine) return null;
-                          const gated =
+                          const canEdit = isAdmin || isMine;
+                          const metGated =
                             isMine &&
-                            !r.done &&
                             !!currentUser &&
                             !canReviewerSignOff(country, currentUser.id);
+                          if (!canEdit) {
+                            return (
+                              <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full"
+                                  style={{ background: REVIEW_STATUS_COLORS[st] }}
+                                />
+                                {REVIEW_STATUS_LABELS[st]}
+                              </span>
+                            );
+                          }
                           return (
                             <div className="flex flex-col items-end gap-1">
-                              <Button
-                                size="xs"
-                                variant={r.done ? 'ghost' : 'primary'}
-                                disabled={gated}
-                                onClick={() => {
-                                  toggleReview(
-                                    country.id,
-                                    r.reviewerId,
-                                    !r.done,
-                                  );
+                              <Select
+                                value={st}
+                                onValueChange={(v) => {
+                                  const ns = v as ReviewStatus;
+                                  setReviewStatus(country.id, r.reviewerId, ns);
                                   toast({
-                                    title: r.done
-                                      ? `Reopened ${r.reviewerName}'s review`
-                                      : `${isMine ? 'Signed off' : 'Marked'} ${r.reviewerName}'s review`,
-                                    variant: r.done ? 'info' : 'success',
+                                    title: `${r.reviewerName}'s review → ${REVIEW_STATUS_LABELS[ns]}`,
+                                    variant: ns === 'met' ? 'success' : 'info',
                                   });
                                 }}
                               >
-                                {r.done
-                                  ? 'Reopen'
-                                  : isMine
-                                    ? 'Sign off'
-                                    : 'Mark done'}
-                              </Button>
-                              {gated && (
+                                <SelectTrigger className="h-8 w-[210px]">
+                                  <span className="flex items-center gap-2 truncate">
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style={{
+                                        background: REVIEW_STATUS_COLORS[st],
+                                      }}
+                                    />
+                                    <span className="truncate">
+                                      {REVIEW_STATUS_LABELS[st]}
+                                    </span>
+                                  </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {REVIEW_STATUSES.map((s) => (
+                                    <SelectItem
+                                      key={s}
+                                      value={s}
+                                      disabled={s === 'met' && metGated}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        <span
+                                          className="h-2.5 w-2.5 rounded-full"
+                                          style={{
+                                            background: REVIEW_STATUS_COLORS[s],
+                                          }}
+                                        />
+                                        {REVIEW_STATUS_LABELS[s]}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {metGated && (
                                 <span className="text-[10px] text-danger">
-                                  Resolve your blocking comments first
+                                  Resolve your blocking comments to mark Met
                                 </span>
                               )}
                             </div>

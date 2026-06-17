@@ -6,6 +6,7 @@ import type {
   FigureType,
   ReportProgress,
   ReviewProgress,
+  ReviewStatus,
   TaskStatus,
   TeamMember,
 } from './types';
@@ -14,7 +15,41 @@ import { daysUntil } from './format';
 
 export const isFigureDone = (f: FigureProgress) => f.status === 'done';
 export const isReportMet = (r: ReportProgress) => r.status === 'met';
-export const isReviewDone = (r: ReviewProgress) => r.done;
+
+/** A review's status, tolerant of legacy records that only carry `done`. */
+export function reviewStatusOf(r: ReviewProgress): ReviewStatus {
+  return r.status ?? (r.done ? 'met' : 'not_started');
+}
+
+/** A review counts as complete when met or reviewed-with-comments. */
+export const isReviewDone = (r: ReviewProgress) => {
+  const s = reviewStatusOf(r);
+  return s === 'met' || s === 'reviewed_with_comments';
+};
+
+/** Least-advanced → most-advanced rank, for the map "least-advanced wins" rule. */
+const REVIEW_STATUS_RANK: Record<ReviewStatus, number> = {
+  not_started: 0,
+  in_progress: 1,
+  reviewed_with_comments: 2,
+  met: 3,
+};
+
+/**
+ * The country's overall reviewer status = the least-advanced status across all
+ * its reviewers. Returns null when there are no reviewers. A result of
+ * 'not_started' means at least one reviewer hasn't started → callers treat that
+ * as "no override" and fall back to completion-based coloring.
+ */
+export function countryReviewStatus(country: Country): ReviewStatus | null {
+  if (!country.reviews.length) return null;
+  let min: ReviewStatus = 'met';
+  for (const r of country.reviews) {
+    const s = reviewStatusOf(r);
+    if (REVIEW_STATUS_RANK[s] < REVIEW_STATUS_RANK[min]) min = s;
+  }
+  return min;
+}
 
 export function figuresCompletion(country: Country): number {
   if (country.figures.length === 0) return 0;
@@ -138,7 +173,17 @@ export function statusFromReport(r: ReportProgress): TaskStatus {
 }
 
 export function statusFromReview(r: ReviewProgress): TaskStatus {
-  return r.done ? 'done' : 'not_started';
+  switch (reviewStatusOf(r)) {
+    case 'met':
+      return 'done';
+    case 'reviewed_with_comments':
+      return 'in_review';
+    case 'in_progress':
+      return 'in_progress';
+    case 'not_started':
+    default:
+      return 'not_started';
+  }
 }
 
 // ── Directed comments / reviewer feedback ────────────────────────────────

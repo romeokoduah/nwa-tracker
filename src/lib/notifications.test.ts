@@ -247,7 +247,7 @@ describe('reviews and status changes', () => {
     return country('c1', {
       name: 'Niger',
       report: { assignedTo: reportAssignee, status: 'in_progress', deadline: null, completedAt: null, notes: null },
-      reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', done: false, completedAt: null, comments: null }],
+      reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', status: 'not_started', done: false, completedAt: null, comments: null }],
     });
   }
 
@@ -285,7 +285,7 @@ describe('reviews and status changes', () => {
       country('c1', {
         name: 'Niger',
         figures: [{ type: fig0, assignedTo: 'afua', status, deadline: null, completedAt: null, notes: null }],
-        reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', done: false, completedAt: null, comments: null }],
+        reviews: [{ reviewerId: 'naga', reviewerName: 'Naga', status: 'not_started', done: false, completedAt: null, comments: null }],
       });
     const prev = state({ team, countries: [withFig('in_progress')] });
     const next = state({ team, countries: [withFig('blocked')] });

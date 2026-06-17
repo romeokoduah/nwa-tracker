@@ -178,6 +178,7 @@ export function buildSeed(): AppState {
       return {
         reviewerId,
         reviewerName: name,
+        status: done ? ('met' as const) : ('not_started' as const),
         done,
         completedAt: done ? raw.metadata.lastSynced : null,
         comments: null,
